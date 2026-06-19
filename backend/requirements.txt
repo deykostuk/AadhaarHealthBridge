@@ -1,0 +1,14 @@
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+python-dotenv
+PyMuPDF
+openai
+chromadb
+cryptography
+requests
+psycopg2-binary
+SQLAlchemy
+rsa
+azure-storage-blob
+gunicorn

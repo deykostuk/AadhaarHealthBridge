@@ -1,0 +1,21 @@
+{
+  "name": "Aadhaar Health Bridge",
+  "short_name": "HealthBridge",
+  "description": "Smart family emergency healthcare system.",
+  "start_url": "/api/v1/login",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
