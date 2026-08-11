@@ -175,7 +175,7 @@ class VaultService:
         try:
             url = f"http://ip-api.com/json/{ip}"
             req = urllib.request.Request(url, headers={'User-Agent': 'AadhaarHealthBridge/1.0'})
-            with urllib.request.urlopen(req, timeout=3) as response:
+            with urllib.request.urlopen(req, timeout=3) as response:  # nosec B310
                 data = json.loads(response.read().decode())
                 if data.get("status") == "success":
                     city = data.get("city", "")

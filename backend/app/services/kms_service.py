@@ -104,6 +104,8 @@ class HashiCorpVaultProvider(BaseKMSProvider):
 
         try:
             url = f"{self.vault_addr}/v1/{self.secret_path}"
+            if not url.startswith(("http://", "https://")):
+                raise ValueError(f"Invalid Vault URL scheme: {url}")
             req = urllib.request.Request(
                 url,
                 headers={
@@ -111,7 +113,7 @@ class HashiCorpVaultProvider(BaseKMSProvider):
                     "Content-Type": "application/json"
                 }
             )
-            with urllib.request.urlopen(req, timeout=4) as response:
+            with urllib.request.urlopen(req, timeout=4) as response:  # nosec B310
                 if response.status == 200:
                     payload = json.loads(response.read().decode("utf-8"))
                     data = payload.get("data", {}).get("data", {}) or payload.get("data", {})

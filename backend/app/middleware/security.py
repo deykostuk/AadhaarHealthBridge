@@ -42,7 +42,7 @@ class SSRFValidator:
             if not hostname:
                 return False, "Invalid URL: Missing hostname."
 
-            if hostname.lower() in ["localhost", "127.0.0.1", "0.0.0.0", "::1", "metadata.google.internal"]:
+            if hostname.lower() in ["localhost", "127.0.0.1", "0.0.0.0", "::1", "metadata.google.internal"]:  # nosec B104
                 return False, "Access to localhost and internal loopback addresses is forbidden."
 
             # Resolve DNS and check each IP against blocked subnets

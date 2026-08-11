@@ -51,7 +51,7 @@ def generate_local_embedding(text: str, dim: int = 1536) -> list:
 
     for token in tokens:
         # Token hash projection
-        h = int(hashlib.md5(token.encode("utf-8")).hexdigest(), 16)
+        h = int(hashlib.sha256(token.encode("utf-8")).hexdigest(), 16)
         idx = h % dim
         sign = 1.0 if (h >> 8) & 1 else -1.0
         vec[idx] += sign * (1.0 + math.log(1.0 + len(token)))
