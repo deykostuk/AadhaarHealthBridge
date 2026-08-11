@@ -164,6 +164,7 @@
             </div>
 
             <form action="/api/v1/family/add-member" method="POST" class="space-y-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div>
                     <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5 header-font">Relationship Role</label>
                     <input type="text" name="relation" placeholder="e.g. Father, Mother, Daughter" required class="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-indigo-500 transition-all">

@@ -34,6 +34,7 @@
             </div>
 
             <form action="/api/v1/register" method="POST" class="space-y-12">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 
                 <section id="section_1" class="space-y-6 transition-all duration-300">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-2">

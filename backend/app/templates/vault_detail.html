@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <div id="debug_errors" style="background: red; color: white; padding: 10px; font-family: monospace; font-size: 12px; z-index: 99999; position: fixed; top: 0; left: 0; right: 0; max-height: 200px; overflow-y: auto; display: none;"></div>
     <script>
         window.addEventListener('error', function(e) {
@@ -197,6 +198,7 @@
                     <h3 class="text-xs font-black tracking-wider uppercase text-slate-400 header-font">Upload Medical Files</h3>
                 </div>
                 <form id="upload_form" action="/api/v1/vault/upload/{{ vault.id }}" method="POST" enctype="multipart/form-data" class="space-y-4" onsubmit="handleUploadSubmit(event)">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div>
                         <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 header-font">Document Label / Name</label>
                         <input type="text" name="file_name" placeholder="e.g. Blood Sugar Jan 2026, Fever Prescription" class="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-indigo-500 transition-all text-white">
@@ -380,15 +382,16 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 {% if doc.is_encrypted %}
-                                <button id="decrypt_btn_{{ doc.id }}" onclick="handleDecryptClick('{{ doc.file_path }}', '{{ doc.category }}', '{{ doc.id }}')" class="bg-indigo-950 border border-indigo-500/30 hover:bg-indigo-900 text-indigo-300 text-[9px] font-black uppercase tracking-wider px-3 py-2 rounded-lg transition-all active:scale-95">
+                                <button id="decrypt_btn_{{ doc.id }}" data-doc-id="{{ doc.id }}" data-file-path="{{ doc.file_path }}" onclick="handleDecryptClick('{{ doc.file_path }}', '{{ doc.category }}', '{{ doc.id }}')" class="bg-indigo-950 border border-indigo-500/30 hover:bg-indigo-900 text-indigo-300 text-[9px] font-black uppercase tracking-wider px-3 py-2 rounded-lg transition-all active:scale-95">
                                     🔑 Decrypt & View
                                 </button>
                                 {% else %}
-                                <a href="/static/{{ doc.file_path }}" target="_blank" class="bg-slate-900 border border-white/10 hover:bg-slate-800 text-white text-[9px] font-black uppercase tracking-wider px-3 py-2 rounded-lg transition-colors">
+                                <a href="/api/v1/vault/{{ vault.id }}/document/{{ doc.id }}/serve" data-doc-id="{{ doc.id }}" data-file-path="{{ doc.file_path }}" target="_blank" class="bg-slate-900 border border-white/10 hover:bg-slate-800 text-white text-[9px] font-black uppercase tracking-wider px-3 py-2 rounded-lg transition-colors">
                                     View file
                                 </a>
                                 {% endif %}
                                 <form action="/api/v1/vault/document/delete/{{ doc.id }}" method="POST" onsubmit="return confirm('Delete this medical record permanently?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="bg-red-950/50 border border-red-500/20 hover:bg-red-900/20 text-red-400 text-[9px] font-black uppercase tracking-wider px-3 py-2 rounded-lg transition-colors">
                                         Delete
                                     </button>
@@ -575,6 +578,7 @@
                 <!-- Collapsible Input Fields Form (Hidden by Default) -->
                 <div id="demographics_edit_form" class="hidden">
                     <form action="/api/v1/vault/update/{{ vault.id }}" method="POST" class="space-y-5">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 header-font">Full Name</label>
@@ -787,47 +791,37 @@
     }
 
     // Background pre-fetch and cache all files for this vault
+    // Background pre-fetch and cache all files for this vault
     async function backgroundCacheVaultFiles() {
-        const docButtons = document.querySelectorAll('[onclick^="handleDecryptClick"], [href^="/static/vault_docs"]');
+        const docElements = document.querySelectorAll('[data-file-path]');
         const filesToCache = [];
 
-        docButtons.forEach(el => {
-            let path = "";
-            if (el.tagName === "A") {
-                const href = el.getAttribute("href") || "";
-                if (href.startsWith("/static/")) {
-                    path = href.replace("/static/", "");
-                }
-            } else {
-                const onclickText = el.getAttribute("onclick") || "";
-                const match = onclickText.match(/handleDecryptClick\('([^']+)'/);
-                if (match) {
-                    path = match[1];
-                }
-            }
-            if (path && !filesToCache.includes(path)) {
-                filesToCache.push(path);
+        docElements.forEach(el => {
+            const path = el.getAttribute("data-file-path");
+            const docId = el.getAttribute("data-doc-id");
+            if (path && docId && !filesToCache.some(x => x.path === path)) {
+                filesToCache.push({ path, docId });
             }
         });
 
         console.log("Offline Cache: Scanning documents...", filesToCache);
 
-        for (const filePath of filesToCache) {
+        for (const item of filesToCache) {
             try {
-                const cached = await getCachedFile(filePath);
+                const cached = await getCachedFile(item.path);
                 if (!cached) {
-                    console.log(`Offline Cache: Pre-fetching ${filePath}...`);
-                    const response = await fetch("/static/" + filePath);
+                    console.log(`Offline Cache: Pre-fetching ${item.path}...`);
+                    const response = await fetch(`/api/v1/vault/{{ vault.id }}/document/${item.docId}/serve`);
                     if (response.ok) {
                         const buffer = await response.arrayBuffer();
-                        await cacheFile(filePath, buffer);
-                        console.log(`Offline Cache: Successfully cached ${filePath}`);
+                        await cacheFile(item.path, buffer);
+                        console.log(`Offline Cache: Successfully cached ${item.path}`);
                     }
                 } else {
-                    console.log(`Offline Cache: ${filePath} is already cached`);
+                    console.log(`Offline Cache: ${item.path} is already cached`);
                 }
             } catch (err) {
-                console.warn(`Offline Cache: Failed to pre-fetch/cache ${filePath}:`, err);
+                console.warn(`Offline Cache: Failed to pre-fetch/cache ${item.path}:`, err);
             }
         }
     }
@@ -1155,6 +1149,35 @@
         updateTrendsDashboard();
     }
 
+    // --- Emergency Profile local storage encryption helpers ---
+    async function deriveProfileKey(qrToken) {
+        const enc = new TextEncoder();
+        const tokenBytes = enc.encode(qrToken);
+        const hash = await window.crypto.subtle.digest("SHA-256", tokenBytes);
+        return window.crypto.subtle.importKey(
+            "raw",
+            hash,
+            { name: "AES-GCM" },
+            false,
+            ["encrypt", "decrypt"]
+        );
+    }
+
+    async function encryptProfile(plainText, qrToken) {
+        const key = await deriveProfileKey(qrToken);
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const enc = new TextEncoder();
+        const encrypted = await window.crypto.subtle.encrypt(
+            { name: "AES-GCM", iv: iv },
+            key,
+            enc.encode(plainText)
+        );
+        const combined = new Uint8Array(iv.length + encrypted.byteLength);
+        combined.set(iv, 0);
+        combined.set(new Uint8Array(encrypted), iv.length);
+        return btoa(String.fromCharCode.apply(null, combined));
+    }
+
     // Auto-decrypt and cache demographics to local storage for offline PWA emergency access
     window.addEventListener("DOMContentLoaded", async () => {
         // Cache demographics for offline PWA Emergency Card
@@ -1175,7 +1198,20 @@
             emergency_3_relation: "{{ vault.emergency_3_relation or '' }}",
             emergency_3_phone: "{{ vault.emergency_3_phone or '' }}"
         };
-        localStorage.setItem("offline_emergency_profile", JSON.stringify(offlineProfile));
+
+        try {
+            const qrToken = "{{ vault.qr_token }}";
+            if (qrToken) {
+                const plainText = JSON.stringify(offlineProfile);
+                const cipherText = await encryptProfile(plainText, qrToken);
+                localStorage.setItem("offline_emergency_profile", cipherText);
+            } else {
+                localStorage.setItem("offline_emergency_profile", JSON.stringify(offlineProfile));
+            }
+        } catch (err) {
+            console.error("Failed to encrypt offline profile:", err);
+            localStorage.setItem("offline_emergency_profile", JSON.stringify(offlineProfile));
+        }
 
         // Start background pre-fetching of documents
         backgroundCacheVaultFiles().catch(err => console.error("Offline Cache initialization failed:", err));
@@ -1295,9 +1331,13 @@
                         formData.append("ocr_text", encryptedOcrText);
                         formData.append("ai_summary", encryptedSummaryText);
 
+                        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                        const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
                         // Submit to upload endpoint
                         const response = await fetch(e.target.action, {
                             method: "POST",
+                            headers: { "X-CSRFToken": csrfToken },
                             body: formData
                         });
 
@@ -1329,8 +1369,12 @@
                 formData.append("is_encrypted", "false");
                 formData.append("ocr_text", ocrText);
 
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
                 const response = await fetch(e.target.action, {
                     method: "POST",
+                    headers: { "X-CSRFToken": csrfToken },
                     body: formData
                 });
 
@@ -1444,8 +1488,8 @@
         }
 
         if (!packedBuffer) {
-            // Fetch static encrypted payload
-            const response = await fetch("/static/" + filePath);
+            // Fetch private encrypted payload from secure serve route
+            const response = await fetch(`/api/v1/vault/{{ vault.id }}/document/${docId}/serve`);
             if (!response.ok) {
                 throw new Error("Could not download encrypted document.");
             }
@@ -2146,11 +2190,15 @@
         consoleEl.scrollTop = consoleEl.scrollHeight;
 
         try {
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
             const response = await fetch("/api/v1/vault/{{ vault.id }}/chat", {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
-                    "Authorization": "Bearer " + JWT_TOKEN
+                    "Authorization": "Bearer " + JWT_TOKEN,
+                    "X-CSRFToken": csrfToken
                 },
                 body: JSON.stringify({ query: query })
             });

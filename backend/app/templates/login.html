@@ -107,6 +107,7 @@
 
             <!-- Login Submission Form -->
             <form action="/api/v1/login" method="POST" class="mt-8 space-y-5">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div>
                     <label class="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 header-font" data-i18n="login.username_label">Account Username</label>
                     <input type="text" name="username" required autocomplete="off" placeholder="Enter username" class="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-xs font-semibold outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-white">

@@ -122,7 +122,38 @@
 
     <!-- Logic to load from Local Storage -->
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
+        // --- Decryption helpers ---
+        async function deriveProfileKey(qrToken) {
+            const enc = new TextEncoder();
+            const tokenBytes = enc.encode(qrToken);
+            const hash = await window.crypto.subtle.digest("SHA-256", tokenBytes);
+            return window.crypto.subtle.importKey(
+                "raw",
+                hash,
+                { name: "AES-GCM" },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function decryptProfile(cipherTextBase64, qrToken) {
+            const key = await deriveProfileKey(qrToken);
+            const binary = atob(cipherTextBase64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            const iv = bytes.slice(0, 12);
+            const ciphertext = bytes.slice(12);
+            const decrypted = await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                ciphertext
+            );
+            return new TextDecoder().decode(decrypted);
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
             const dataStr = localStorage.getItem("offline_emergency_profile");
             if (!dataStr) {
                 document.body.innerHTML = `
@@ -136,8 +167,34 @@
                 return;
             }
 
+            let profile;
             try {
-                const profile = JSON.parse(dataStr);
+                // Try reading directly if it was saved as plaintext
+                profile = JSON.parse(dataStr);
+            } catch (err) {
+                // If it fails to parse as JSON, it's encrypted. Decrypt using QR token in URL pathname.
+                try {
+                    const pathParts = window.location.pathname.split('/');
+                    const qrToken = pathParts[pathParts.length - 1];
+                    if (!qrToken || qrToken === "offline_emergency.html") {
+                        throw new Error("No valid scan token present in URL pathname");
+                    }
+                    const decryptedText = await decryptProfile(dataStr, qrToken);
+                    profile = JSON.parse(decryptedText);
+                } catch (decErr) {
+                    console.error("Profile decryption failed:", decErr);
+                    document.body.innerHTML = `
+                        <div class="glass-panel max-w-sm w-full rounded-3xl p-8 text-center border border-red-500/20 bg-red-950/10 space-y-4">
+                            <span class="text-4xl block">🔒</span>
+                            <h1 class="text-xs font-black uppercase tracking-widest text-red-500 header-font">Decryption Failed</h1>
+                            <p class="text-[10px] text-slate-400 leading-relaxed font-medium">This emergency record is encrypted and requires a physical scan of the active patient QR code to be viewed.</p>
+                        </div>
+                    `;
+                    return;
+                }
+            }
+
+            try {
                 
                 // Set text contents safely
                 document.getElementById("p_name").textContent = profile.full_name || "Not Specified";

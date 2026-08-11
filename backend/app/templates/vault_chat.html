@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vault Chat - {{ vault.full_name }}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -487,9 +488,128 @@
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
+
+        /* Passphrase Overlay Style */
+        .unlock-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .unlock-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: card-appear 0.3s ease;
+        }
+        @keyframes card-appear {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .unlock-icon {
+            font-size: 2.5rem;
+        }
+        .unlock-card h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+        }
+        .unlock-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .unlock-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+        .unlock-input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--panel-border);
+            background: rgba(15, 23, 42, 0.4);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .unlock-input-group input:focus {
+            border-color: var(--accent-primary);
+        }
+        .error-text {
+            color: #ef4444;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .unlock-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .action-btn.skip {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--panel-border);
+        }
+        .action-btn.skip:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+        .action-btn.unlock {
+            background: var(--user-bubble);
+            color: white;
+        }
+        .action-btn.unlock:hover {
+            opacity: 0.95;
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
     </style>
 </head>
 <body>
+
+    <!-- Passphrase Dialog Overlay -->
+    <div id="unlock-overlay" class="unlock-overlay" style="display: none;">
+        <div class="unlock-card">
+            <div class="unlock-icon">🔒</div>
+            <h2>Unlock Encrypted Health Files</h2>
+            <p>Some medical files in this vault are Zero-Knowledge encrypted. Enter the passphrase to enable AI Chat analysis and search for these files.</p>
+            <div class="unlock-input-group">
+                <input type="password" id="passphrase-input" placeholder="Enter vault passphrase...">
+                <div class="error-text" id="unlock-error" style="display: none;">❌ Decryption failed. Please check the passphrase.</div>
+            </div>
+            <div class="unlock-actions">
+                <button class="action-btn skip" onclick="skipUnlock()">Skip (Search unencrypted only)</button>
+                <button class="action-btn unlock" onclick="submitUnlock()">Unlock Chat</button>
+            </div>
+        </div>
+    </div>
 
     <header>
         <div class="header-title">
@@ -559,6 +679,188 @@
 
     <script>
         const JWT_TOKEN = "{{ session.get('token', '') }}";
+        const DOCUMENTS = {{ documents | tojson | safe }};
+        const isVaultEncrypted = DOCUMENTS.some(d => d.is_encrypted);
+        let currentPassphrase = sessionStorage.getItem("zk_passphrase_{{ vault.id }}") || "";
+
+        // --- Web Crypto subtle decryption helpers ---
+        async function deriveKey(passphrase, salt) {
+            const enc = new TextEncoder();
+            const baseKey = await window.crypto.subtle.importKey(
+                "raw",
+                enc.encode(passphrase),
+                { name: "PBKDF2" },
+                false,
+                ["deriveBits", "deriveKey"]
+            );
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2",
+                    salt: salt,
+                    iterations: 100000,
+                    hash: "SHA-256"
+                },
+                baseKey,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function decryptFileBuffer(packedArrayBuffer, passphrase) {
+            const packed = new Uint8Array(packedArrayBuffer);
+            if (packed.length < 28) {
+                throw new Error("Invalid encrypted file format.");
+            }
+            const salt = packed.slice(0, 16);
+            const iv = packed.slice(16, 28);
+            const ciphertext = packed.slice(28);
+
+            const key = await deriveKey(passphrase, salt);
+            return await window.crypto.subtle.decrypt(
+                {
+                    name: "AES-GCM",
+                    iv: iv
+                },
+                key,
+                ciphertext
+            );
+        }
+
+        async function decryptString(encryptedBase64, passphrase) {
+            if (!encryptedBase64) return "";
+            try {
+                const binaryString = atob(encryptedBase64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                const decryptedBuffer = await decryptFileBuffer(bytes.buffer || bytes, passphrase);
+                return new TextDecoder().decode(decryptedBuffer);
+            } catch (err) {
+                console.error("Decryption failed:", err);
+                throw err;
+            }
+        }
+
+        async function decryptAllDocuments() {
+            for (const d of DOCUMENTS) {
+                if (d.is_encrypted && d.ocr_text) {
+                    d.plaintext = await decryptString(d.ocr_text, currentPassphrase);
+                }
+            }
+        }
+
+        function skipUnlock() {
+            document.getElementById("unlock-overlay").style.display = "none";
+        }
+
+        async function submitUnlock() {
+            const input = document.getElementById("passphrase-input");
+            const val = input.value.trim();
+            const errEl = document.getElementById("unlock-error");
+            if (!val) return;
+            
+            try {
+                // Find first encrypted document to test
+                const testDoc = DOCUMENTS.find(d => d.is_encrypted);
+                if (testDoc) {
+                    await decryptString(testDoc.ocr_text, val);
+                }
+                
+                currentPassphrase = val;
+                sessionStorage.setItem("zk_passphrase_{{ vault.id }}", val);
+                errEl.style.display = "none";
+                
+                await decryptAllDocuments();
+                document.getElementById("unlock-overlay").style.display = "none";
+            } catch (err) {
+                errEl.style.display = "block";
+                input.focus();
+            }
+        }
+
+        // Auto-decrypt on page load if passphrase is saved
+        window.addEventListener("DOMContentLoaded", async () => {
+            if (isVaultEncrypted) {
+                if (currentPassphrase) {
+                    try {
+                        await decryptAllDocuments();
+                    } catch (err) {
+                        sessionStorage.removeItem("zk_passphrase_{{ vault.id }}");
+                        currentPassphrase = "";
+                        document.getElementById("unlock-overlay").style.display = "flex";
+                    }
+                } else {
+                    document.getElementById("unlock-overlay").style.display = "flex";
+                }
+            }
+        });
+
+        // Client-side local RAG context retrieval
+        function clientRetrieve(query, docs, topN=3) {
+            if (!query || !docs) return [];
+            
+            const chunks = [];
+            docs.forEach(d => {
+                const text = d.plaintext || d.ocr_text || "";
+                if (!text || d.is_encrypted && !d.plaintext) return;
+                
+                const parts = text.split(/\n{2,}|\r\n{2,}/);
+                parts.forEach(p => {
+                    p = p.trim();
+                    if (!p) return;
+                    for (let i = 0; i < p.length; i += 1000) {
+                        chunks.push({
+                            doc_id: d.id,
+                            file_name: d.file_name,
+                            text: p.substring(i, i + 1000)
+                        });
+                    }
+                });
+            });
+            
+            const qTokens = query.toLowerCase().match(/\w+/g) || [];
+            const synonymGroups = [
+                ["sugar", "glucose", "hba1c", "diabetes", "fbs", "rbs", "sugars"],
+                ["kidney", "creatinine", "urea", "uric", "renal", "kidneys", "gfr", "egfr", "uric_acid"],
+                ["blood", "hemoglobin", "hb", "hgb", "urea", "sugar", "pressure"],
+                ["anemia", "hemoglobin", "hb", "hgb", "rbc", "iron"],
+                ["heart", "pressure", "bp", "pulse", "cholesterol", "hypertension"]
+            ];
+            
+            const expandedTokens = [...qTokens];
+            qTokens.forEach(token => {
+                synonymGroups.forEach(group => {
+                    if (group.includes(token)) {
+                        expandedTokens.push(...group);
+                    }
+                });
+            });
+            
+            const scores = [];
+            chunks.forEach(c => {
+                const textLower = c.text.toLowerCase();
+                let score = 0;
+                expandedTokens.forEach(t => {
+                    let pos = textLower.indexOf(t);
+                    while (pos !== -1) {
+                        score++;
+                        pos = textLower.indexOf(t, pos + 1);
+                    }
+                });
+                scores.push({ score, chunk: c });
+            });
+            
+            scores.sort((a, b) => b.score - a.score);
+            const results = scores.filter(x => x.score > 0).map(x => x.chunk);
+            if (results.length === 0 && chunks.length > 0) {
+                return chunks.slice(0, topN);
+            }
+            return results.slice(0, topN);
+        }
+
         const sendBtn = document.getElementById('send-btn');
         const queryInput = document.getElementById('query-input');
         const messagesArea = document.getElementById('messages-area');
@@ -631,13 +933,29 @@
             messagesArea.scrollTop = messagesArea.scrollHeight;
 
             try {
+                let payload = { query: query };
+                if (isVaultEncrypted && currentPassphrase) {
+                    const topChunks = clientRetrieve(query, DOCUMENTS, 5);
+                    const context = topChunks.map(c => `[${c.file_name}] ${c.text}`).join("\n\n");
+                    payload.context = context;
+                    payload.sources = topChunks.map(c => ({
+                        doc_id: c.doc_id,
+                        file_name: c.file_name,
+                        text: c.text
+                    }));
+                }
+
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
                 const response = await fetch(`/api/v1/vault/{{ vault.id }}/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + JWT_TOKEN
+                        'Authorization': 'Bearer ' + JWT_TOKEN,
+                        'X-CSRFToken': csrfToken
                     },
-                    body: JSON.stringify({query: query})
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();

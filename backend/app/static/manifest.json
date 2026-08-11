@@ -1,21 +1,25 @@
 {
-  "name": "Aadhaar Health Bridge",
+  "name": "Aadhaar Health Bridge - Digital Patient Vault",
   "short_name": "HealthBridge",
-  "description": "Smart family emergency healthcare system.",
-  "start_url": "/api/v1/login",
+  "description": "Universal FHIR-compliant offline-first digital healthcare vault and AI clinical assistant",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#0f766e",
   "icons": [
     {
       "src": "/static/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/static/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["medical", "health", "productivity"]
 }

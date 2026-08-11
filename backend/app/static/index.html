@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="description" content="Aadhaar Health Bridge - Universal FHIR-compliant offline-first digital healthcare vault and AI clinical assistant">
+  <title>Aadhaar Health Bridge | PWA Vault</title>
+
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <link rel="icon" type="image/png" href="/static/icon-192.png">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #0f766e;
+      --primary-light: #14b8a6;
+      --primary-glow: rgba(20, 184, 166, 0.25);
+      --bg-dark: #0f172a;
+      --surface-dark: #1e293b;
+      --surface-card: rgba(30, 41, 59, 0.7);
+      --border-glow: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 10% 20%, #0f172a 0%, #020617 90%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-glow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      text-decoration: none;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      padding: 0.25rem 0.6rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-glow);
+      background: var(--surface-dark);
+      color: var(--text-main);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn:hover {
+      background: var(--primary);
+      border-color: var(--primary-light);
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      border: none;
+      color: white;
+    }
+
+    /* Auth View */
+    .auth-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 2rem;
+    }
+
+    .auth-card {
+      background: var(--surface-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-glow);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-glow);
+      background: rgba(15, 23, 42, 0.6);
+      color: white;
+      outline: none;
+      font-size: 0.95rem;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    /* App View */
+    .app-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      flex: 1;
+    }
+
+    .sidebar {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(12px);
+      border-right: 1px solid var(--border-glow);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .nav-tab {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: left;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .nav-tab:hover, .nav-tab.active {
+      background: rgba(20, 184, 166, 0.15);
+      color: var(--primary-light);
+    }
+
+    .main-content {
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards & Grids */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .glass-card {
+      background: var(--surface-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .metric-card {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border-glow);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--primary-light);
+    }
+
+    /* Chat Container */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 70vh;
+      background: var(--surface-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .chat-msg {
+      max-width: 80%;
+      padding: 0.85rem 1.2rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      background: var(--primary);
+      color: white;
+    }
+
+    .chat-msg.assistant {
+      align-self: flex-start;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-glow);
+    }
+
+    .chat-input-bar {
+      display: flex;
+      padding: 1rem;
+      background: rgba(15, 23, 42, 0.9);
+      border-top: 1px solid var(--border-glow);
+      gap: 0.75rem;
+    }
+
+    .badge {
+      background: rgba(20, 184, 166, 0.2);
+      color: var(--primary-light);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+
+    @media (max-width: 768px) {
+      .app-layout {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <a href="/" class="brand">
+      <span>🛡️</span>
+      <span>Aadhaar Health Bridge</span>
+      <span class="brand-badge">PWA R4</span>
+    </a>
+    <div class="nav-actions">
+      <button id="pwa-install-btn" class="btn btn-primary" style="display: none;">
+        📲 Install App
+      </button>
+      <button id="logout-btn" class="btn" style="display: none;">
+        🚪 Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- Auth View (Login / Signup) -->
+  <main id="auth-view" class="auth-container">
+    <div class="auth-card">
+      <h2 style="margin-bottom: 1rem;">🔐 Access Digital Vault</h2>
+      <p class="text-muted" style="margin-bottom: 1.5rem; font-size: 0.9rem;">
+        Authenticate with OAuth 2.0 / Argon2id secured credentials.
+      </p>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="login-username" class="form-control" value="kostuk" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" class="form-control" value="Demo1234!" required>
+        </div>
+        <p id="login-error" style="color: #f87171; font-size: 0.85rem; margin-bottom: 1rem;"></p>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Authenticated PWA App View -->
+  <main id="app-view" class="app-layout" style="display: none;">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="form-group">
+        <label>Active Patient Profile</label>
+        <select id="vault-select" class="form-control"></select>
+      </div>
+
+      <button class="nav-tab active" data-tab="overview">📊 Overview & Vitals</button>
+      <button class="nav-tab" data-tab="biomarkers">🧪 Lab Biomarkers</button>
+      <button class="nav-tab" data-tab="documents">📄 Medical Records</button>
+      <button class="nav-tab" data-tab="chat">🤖 Local RAG AI</button>
+      <button class="nav-tab" data-tab="audit">🛡️ Audit Trail</button>
+      <button class="nav-tab" data-tab="emergency">🚨 Emergency QR</button>
+    </aside>
+
+    <!-- Main Content Area -->
+    <section class="main-content">
+      <!-- Tab 1: Overview -->
+      <div id="tab-overview" class="tab-content active">
+        <h2>Patient Profile Overview</h2>
+        <div class="card-grid">
+          <div class="glass-card">
+            <small class="text-muted">Full Name</small>
+            <h3 id="patient-name">Loading...</h3>
+          </div>
+          <div class="glass-card">
+            <small class="text-muted">Relation</small>
+            <h3 id="patient-relation">Self</h3>
+          </div>
+          <div class="glass-card">
+            <small class="text-muted">Blood Group</small>
+            <h3 id="patient-blood-group" style="color: #f87171;">O+</h3>
+          </div>
+          <div class="glass-card">
+            <small class="text-muted">Emergency Contact</small>
+            <h3 id="patient-emergency-contact">+91 98765 43210</h3>
+          </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+          <button id="export-fhir-btn" class="btn btn-primary">
+            📥 Export FHIR R4 Bundle
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Biomarkers -->
+      <div id="tab-biomarkers" class="tab-content">
+        <h2>Extracted Clinical Biomarkers (HL7 FHIR Observations)</h2>
+        <div id="metrics-list" class="card-grid"></div>
+      </div>
+
+      <!-- Tab 3: Documents -->
+      <div id="tab-documents" class="tab-content">
+        <h2>Medical Document Ingestion (Local Python PDF Engine)</h2>
+        <div class="glass-card" style="margin-bottom: 1.5rem;">
+          <form id="upload-doc-form" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="margin-bottom: 0; flex: 1;">
+              <label>Select Clinical Report PDF / TXT</label>
+              <input type="file" id="doc-file-input" class="form-control" accept=".pdf,.txt" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Category</label>
+              <select id="doc-category-select" class="form-control">
+                <option value="Diagnostic Lab Report">Diagnostic Lab Report</option>
+                <option value="Prescription">Prescription</option>
+                <option value="Discharge Summary">Discharge Summary</option>
+                <option value="Diagnostic Imaging">Diagnostic Imaging</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Upload & Process</button>
+          </form>
+          <div id="upload-status" style="margin-top: 0.75rem; font-size: 0.85rem;"></div>
+        </div>
+        <div id="documents-list" class="card-grid"></div>
+      </div>
+
+      <!-- Tab 4: Local RAG Chat -->
+      <div id="tab-chat" class="tab-content">
+        <h2>Clinical RAG Assistant (Local Ollama & Prompt Shield)</h2>
+        <div class="chat-container">
+          <div id="chat-messages" class="chat-messages">
+            <div class="chat-msg assistant">
+              Hello! I am your privacy-first on-device clinical assistant. Ask me questions about your lab results, biomarker trends, or discharge instructions.
+            </div>
+          </div>
+          <form id="chat-form" class="chat-input-bar">
+            <input type="text" id="chat-input" class="form-control" placeholder="Ask a question (e.g. Is my fasting glucose normal?)..." required>
+            <button type="submit" class="btn btn-primary">Send</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tab 5: Audit Trail -->
+      <div id="tab-audit" class="tab-content">
+        <h2>HL7 FHIR AuditEvent Log Trail</h2>
+        <div id="audit-list" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;"></div>
+      </div>
+
+      <!-- Tab 6: Emergency QR -->
+      <div id="tab-emergency" class="tab-content">
+        <h2>Offline Paramedic Emergency Access</h2>
+        <p class="text-muted" style="margin-bottom: 1.5rem;">
+          In an emergency, medical responders scan this QR code to access offline vital signs with zero internet.
+        </p>
+        <div class="glass-card" style="display: flex; flex-direction: column; align-items: center; max-width: 320px;">
+          <div id="emergency-qr-code" style="padding: 1rem; background: white; border-radius: 8px;"></div>
+          <p style="margin-top: 1rem; font-weight: 600;">Paramedic Glass-Breaker QR</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Client-Side PWA App Scripts -->
+  <script src="/static/qrcode.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

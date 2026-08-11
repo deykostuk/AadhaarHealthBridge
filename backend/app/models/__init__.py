@@ -1,7 +1,1 @@
-from .patient import (
-    User,
-    VaultProfile,
-    VaultAccess,
-    Document,
-    QRScanLog
-)
+from app.models.patient import User, VaultProfile, VaultAccess, Document, HealthMetric, QRScanLog

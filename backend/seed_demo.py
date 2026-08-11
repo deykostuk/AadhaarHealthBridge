@@ -1,17 +1,20 @@
-from app import create_app, db
-from app.models.patient import User, VaultProfile, VaultAccess, Document, QRScanLog
+from app.database import SessionLocal, engine, Base
+from app.models.patient import User, VaultProfile, VaultAccess, Document, QRScanLog, HealthMetric
 from werkzeug.security import generate_password_hash
 
-app = create_app()
+# Ensure all tables exist
+Base.metadata.create_all(bind=engine)
 
-with app.app_context():
-    # Clean existing data first to prevent key conflicts
-    db.session.query(Document).delete()
-    db.session.query(QRScanLog).delete()
-    db.session.query(VaultAccess).delete()
-    db.session.query(VaultProfile).delete()
-    db.session.query(User).delete()
-    db.session.commit()
+db = SessionLocal()
+try:
+    # Clean existing data first
+    db.query(HealthMetric).delete()
+    db.query(Document).delete()
+    db.query(QRScanLog).delete()
+    db.query(VaultAccess).delete()
+    db.query(VaultProfile).delete()
+    db.query(User).delete()
+    db.commit()
 
     print("Wiped existing database test records.")
 
@@ -21,8 +24,8 @@ with app.app_context():
         password_hash=generate_password_hash("1234"),
         role="family_member"
     )
-    db.session.add(user)
-    db.session.flush()
+    db.add(user)
+    db.flush()
 
     # Create Kostuk's vault
     kostuk_vault = VaultProfile(
@@ -46,11 +49,12 @@ with app.app_context():
         emergency_3_phone="+919876543212",
         is_emergency_ready=True
     )
-    db.session.add(kostuk_vault)
-    db.session.flush()
+    db.add(kostuk_vault)
+    db.flush()
 
     # Link access rights
-    db.session.add(VaultAccess(user_id=user.id, vault_id=kostuk_vault.id, access_type="owner"))
-    
-    db.session.commit()
+    db.add(VaultAccess(user_id=user.id, vault_id=kostuk_vault.id, access_type="owner"))
+    db.commit()
     print("SUCCESS: Seeded Kostuk Dey's user and vault profile perfectly!")
+finally:
+    db.close()

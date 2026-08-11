@@ -2,6 +2,9 @@ import os
 import re
 import datetime
 from datetime import datetime as dt
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     import openai
@@ -13,8 +16,6 @@ try:
     from chromadb.config import Settings
 except Exception:
     chromadb = None
-
-from flask import current_app
 
 # Configuration
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "text-embedding-3-small")
@@ -33,37 +34,110 @@ TREND_KEYWORDS = re.compile(r"\b(history|trend|changes?|improv|better|worsen|inc
 DOCUMENT_KEYWORDS = re.compile(r"\b(medication|prescribed|doctor|recommend|discharge|summary|report|find|what did|when to|why|how to|instructions)\b", re.I)
 
 
-def _get_openai_key():
-    return os.environ.get("OPENAI_API_KEY")
+import math
+import hashlib
+
+def generate_local_embedding(text: str, dim: int = 1536) -> list:
+    """
+    100% on-device deterministic semantic embedding engine.
+    Computes a normalized dense vector using character n-grams and token hashing with L2-normalization.
+    Requires zero cloud API keys and executes purely locally.
+    """
+    if not text:
+        return [0.0] * dim
+
+    vec = [0.0] * dim
+    tokens = re.findall(r"\b\w+\b", text.lower())
+
+    for token in tokens:
+        # Token hash projection
+        h = int(hashlib.md5(token.encode("utf-8")).hexdigest(), 16)
+        idx = h % dim
+        sign = 1.0 if (h >> 8) & 1 else -1.0
+        vec[idx] += sign * (1.0 + math.log(1.0 + len(token)))
+
+        # 3-gram character sub-token projection
+        for i in range(len(token) - 2):
+            trigram = token[i:i+3]
+            h_tri = int(hashlib.sha256(trigram.encode("utf-8")).hexdigest(), 16)
+            idx_tri = h_tri % dim
+            sign_tri = 1.0 if (h_tri >> 8) & 1 else -1.0
+            vec[idx_tri] += sign_tri * 0.5
+
+    # L2 Unit Normalization
+    norm = math.sqrt(sum(x * x for x in vec))
+    if norm > 1e-9:
+        vec = [x / norm for x in vec]
+    return vec
+
+
+class SentenceTransformerManager:
+    """
+    Singleton manager for local Sentence Transformers embeddings (all-MiniLM-L6-v2).
+    Generates 384-dimensional dense semantic vectors with on-device CPU inference.
+    Includes graceful fallback to on-device vector projection.
+    """
+    _instance = None
+    _model = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def get_model(self):
+        if self._model is None:
+            from config import settings
+            model_name = getattr(settings, "SENTENCE_TRANSFORMER_MODEL", "all-MiniLM-L6-v2")
+            try:
+                from sentence_transformers import SentenceTransformer
+                logger.info(f"Loading local Sentence Transformer model: {model_name}...")
+                self._model = SentenceTransformer(model_name)
+                logger.info(f"Successfully loaded Sentence Transformer model {model_name}.")
+            except Exception as e:
+                logger.debug(f"SentenceTransformer not loaded ({e}), using on-device deterministic vector engine.")
+                self._model = None
+        return self._model
+
+    def encode(self, texts: list) -> list:
+        if not texts:
+            return []
+        
+        from config import settings
+        dim = getattr(settings, "EMBEDDING_DIM", 384)
+        
+        model = self.get_model()
+        if model is not None:
+            try:
+                embeddings = model.encode(texts, normalize_embeddings=True)
+                return [e.tolist() if hasattr(e, "tolist") else list(e) for e in embeddings]
+            except Exception as e:
+                logger.warning(f"SentenceTransformer encoding error: {e}")
+
+        # Fallback to local on-device dense projection
+        return [generate_local_embedding(t, dim=dim) for t in texts]
 
 
 def _ensure_chroma_client():
     if not chromadb:
         raise RuntimeError("chromadb package not installed")
-    client = chromadb.PersistentClient(path=CHROMA_DIR)
+    chroma_path = os.environ.get("CHROMA_DIR") or CHROMA_DIR
+    client = chromadb.PersistentClient(path=chroma_path)
     return client
 
 
 def _embed_texts(texts):
-    key = _get_openai_key()
-    if not key:
-        raise RuntimeError("OPENAI_API_KEY not configured in environment")
-    
-    try:
-        from openai import OpenAI
-    except ImportError:
-        raise RuntimeError("openai package not installed or outdated")
-        
-    client = OpenAI(api_key=key)
-    resp = client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
-    embeddings = [item.embedding for item in resp.data]
-    return embeddings
+    """Generates embeddings using local Sentence Transformers (all-MiniLM-L6-v2)."""
+    return SentenceTransformerManager.get_instance().encode(texts)
 
 
-def _chunk_text(text, chunk_size=800, overlap=100):
+
+def _chunk_text(text, chunk_size=500, overlap=100):
+    """Sliding-window semantic chunker for medical reports."""
     tokens = []
     start = 0
-    text = text.replace("\r", "")
+    text = (text or "").replace("\r", "")
     while start < len(text):
         end = start + chunk_size
         chunk = text[start:end]
@@ -74,76 +148,37 @@ def _chunk_text(text, chunk_size=800, overlap=100):
     return tokens
 
 
-def index_document(vault_id, document_id, text, file_name=None):
-    """Chunk and upsert document chunks into Chroma collection for the vault using local embeddings."""
-    try:
-        client = _ensure_chroma_client()
-    except Exception as e:
-        current_app.logger.warning(f"Chroma client not available: {e}")
+def index_document(vault_id, document_id, text, file_name=None, db=None):
+    """Chunk and index document with Sentence Transformers embeddings using the active VectorStore (Chroma MVP / pgvector Production)."""
+    chunks = _chunk_text(text, chunk_size=500, overlap=100)
+    if not chunks:
         return False
 
-    collection_name = f"vault_{vault_id}"
-    try:
-        from chromadb.utils import embedding_functions
-        default_ef = embedding_functions.DefaultEmbeddingFunction()
-    except Exception:
-        default_ef = None
-
-    try:
-        collection = client.get_or_create_collection(name=collection_name, embedding_function=default_ef)
-    except Exception:
-        try:
-            collection = client.get_collection(name=collection_name)
-        except Exception:
-            collection = client.create_collection(name=collection_name)
-
-    chunks = _chunk_text(text, chunk_size=800, overlap=150)
-    ids = [f"{document_id}_{i}" for i in range(len(chunks))]
-    metadatas = [{"doc_id": document_id, "file_name": file_name or "document", "chunk_index": i} for i in range(len(chunks))]
-
-    try:
-        collection.upsert(ids=ids, metadatas=metadatas, documents=chunks)
-        current_app.logger.info(f"Indexed document {document_id} into Chroma collection {collection_name} locally")
-        return True
-    except Exception as e:
-        current_app.logger.exception(f"Failed to upsert to Chroma: {e}")
-        return False
+    embeddings = _embed_texts(chunks)
+    
+    from app.services.vector_store_service import VectorStoreFactory
+    store = VectorStoreFactory.get_vector_store(db)
+    return store.index_chunks(
+        vault_id=vault_id,
+        document_id=document_id,
+        chunks=chunks,
+        embeddings=embeddings,
+        file_name=file_name
+    )
 
 
-def semantic_query(vault_id, query, top_k=5):
-    """Return top_k matching chunks (documents) for a query using Chroma local semantic search."""
-    try:
-        client = _ensure_chroma_client()
-    except Exception as e:
-        current_app.logger.warning(f"Chroma client not available: {e}")
+def semantic_query(vault_id, query, top_k=5, db=None):
+    """Return top_k matching chunks for a query using the active VectorStore (Chroma MVP / pgvector Production)."""
+    if not query:
         return []
 
-    collection_name = f"vault_{vault_id}"
-    try:
-        from chromadb.utils import embedding_functions
-        default_ef = embedding_functions.DefaultEmbeddingFunction()
-    except Exception:
-        default_ef = None
-
-    try:
-        collection = client.get_collection(name=collection_name, embedding_function=default_ef)
-    except Exception:
+    query_embeddings = _embed_texts([query])
+    if not query_embeddings:
         return []
 
-    try:
-        res = collection.query(query_texts=[query], n_results=top_k, include=["documents", "metadatas", "distances"])
-        results = []
-        for i in range(len(res["ids"][0])):
-            results.append({
-                "id": res["ids"][0][i],
-                "document": res["documents"][0][i],
-                "metadata": res["metadatas"][0][i],
-                "distance": res["distances"][0][i]
-            })
-        return results
-    except Exception as e:
-        current_app.logger.exception(f"Chroma query failed: {e}")
-        return []
+    from app.services.vector_store_service import VectorStoreFactory
+    store = VectorStoreFactory.get_vector_store(db)
+    return store.search(vault_id=vault_id, query_embedding=query_embeddings[0], top_k=top_k)
 
 
 def _parse_observed_date(text):
@@ -178,7 +213,6 @@ def _find_metric_key(query):
     normalized = query.lower()
     for canonical, aliases in METRIC_ALIASES.items():
         for alias in aliases:
-            # Match whole word to avoid substring matching (e.g. matching "hb" inside "hba1c")
             pattern = rf"\b{re.escape(alias)}\b"
             if re.search(pattern, normalized):
                 return canonical
@@ -233,7 +267,6 @@ def extract_structured_info(text):
     # hemoglobin (minPhys: 2.0, maxPhys: 25.0)
     m = re.search(r"\b(?:hemoglobin|hb|heamoglobin|haemoglobin|hgb)\b(?:\s*(?:level|value|is|of|reading|percentage|concentration|result|at|[:=\-]|percentage\s+is)+)*\s*(\d{1,2}\.\d{1,2}|\d{1,2})\s*(g/dl|g\s+dl|g)?", t, re.I)
     if m:
-        # Avoid matching if preceded by hba1c or glycated context
         prefix_check = t[:m.start()].lower()
         if not any(x in prefix_check[-30:] for x in ["glycated", "hba1c", "hb1ac"]):
             try:
@@ -327,10 +360,7 @@ def format_metric_trend_answer(metric_name, metrics):
     if not metrics:
         return None
     
-    # Capitalize first letter of biomarker name
     pretty_name = metric_name.replace('_', ' ').title()
-    
-    # Get range config
     ref_info = BIOMARKER_RANGES.get(metric_name, {"name": pretty_name, "minNormal": 0.0, "maxNormal": 999.0, "unit": ""})
     min_norm = ref_info.get("minNormal")
     max_norm = ref_info.get("maxNormal")
@@ -339,12 +369,11 @@ def format_metric_trend_answer(metric_name, metrics):
     latest = metrics[-1]
     latest_val = None
     try:
-        if re.match(r"^\d+(\.\d+)?$", latest["metric_value"]):
+        if re.match(r"^\d+(\.\d+)?$", str(latest["metric_value"])):
             latest_val = float(latest["metric_value"])
     except Exception:
         pass
     
-    # Trend evaluation
     status_text = "Unknown"
     if latest_val is not None:
         if latest_val < min_norm:
@@ -354,20 +383,18 @@ def format_metric_trend_answer(metric_name, metrics):
         else:
             status_text = "✅ **Normal**"
             
-    # History list & delta
     history_rows = []
     for m in metrics:
         val = m["metric_value"]
         obs_date = m["observed_date"][:10] if isinstance(m["observed_date"], str) else m["observed_date"].strftime("%Y-%m-%d") if m["observed_date"] else "Unknown"
         history_rows.append(f"| {obs_date} | {val} {unit} |")
 
-    # Trend narrative
     narrative = ""
     if len(metrics) >= 2:
         try:
             numeric_vals = []
             for m in metrics:
-                if re.match(r"^\d+(\.\d+)?$", m["metric_value"]):
+                if re.match(r"^\d+(\.\d+)?$", str(m["metric_value"])):
                     numeric_vals.append(float(m["metric_value"]))
             if len(numeric_vals) >= 2:
                 delta = numeric_vals[-1] - numeric_vals[-2]
