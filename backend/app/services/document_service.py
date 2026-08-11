@@ -67,18 +67,19 @@ class DocumentService:
             logger.error(f"Storage upload error: {e}")
             return None, f"Document upload failed: {str(e)}"
 
-        doc_display_name = file_name.strip() if file_name and file_name.strip() else category or "Diagnostic Lab Report"
+        from app.utils.sanitizer import InputSanitizer
+        clean_display_name = InputSanitizer.sanitize_text(file_name.strip() if file_name and file_name.strip() else category or "Diagnostic Lab Report", max_length=200)
 
         from app.services.pdf_processor import local_pdf_processor
         parsed_doc = local_pdf_processor.extract_text_and_metadata(file_bytes, filename)
         
         extracted_text = ocr_text.strip() if ocr_text and ocr_text.strip() else parsed_doc["text"]
-        doc_category = category or local_pdf_processor.classify_document_category(extracted_text, filename)
+        doc_category = InputSanitizer.sanitize_text(category or local_pdf_processor.classify_document_category(extracted_text, filename), max_length=100)
 
         document = Document(
             vault_id=vault_id,
             file_path=storage_url,
-            file_name=doc_display_name,
+            file_name=clean_display_name,
             category=doc_category,
             ocr_text=extracted_text,
             ai_summary="",

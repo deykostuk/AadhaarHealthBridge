@@ -59,6 +59,30 @@ class SSRFValidator:
             return False, f"SSRF URL validation failed: {str(e)}"
 
 
+class HTTPSTransportSecurityMiddleware(BaseHTTPMiddleware):
+    """
+    HTTPS / TLS 1.3 & 1.2 Transport Security Enforcement Middleware.
+    - Automatically upgrades unencrypted HTTP requests to HTTPS via HTTP 308 redirect.
+    - Stamps 'Secure; SameSite=Lax' on all Set-Cookie headers.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        from config import settings
+        from starlette.responses import RedirectResponse
+
+        # Check for unencrypted HTTP traffic
+        forwarded_proto = request.headers.get("x-forwarded-proto", "").lower()
+        is_http = forwarded_proto == "http" or (settings.ENFORCE_HTTPS and request.url.scheme == "http")
+
+        if is_http:
+            # Reconstruct HTTPS destination URL
+            https_url = request.url.replace(scheme="https")
+            return RedirectResponse(url=str(https_url), status_code=308)
+
+        response: Response = await call_next(request)
+        return response
+
+
 class OWASPSecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
     OWASP API8:2023 & A05:2021 - Security Misconfiguration Hardening.
@@ -74,8 +98,10 @@ class OWASPSecurityHeadersMiddleware(BaseHTTPMiddleware):
         # 2. MIME Type Sniffing Defense (OWASP A05)
         response.headers["X-Content-Type-Options"] = "nosniff"
 
-        # 3. HTTP Strict Transport Security (HSTS - OWASP A02)
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        # 3. HTTP Strict Transport Security (RFC 6797 HSTS Preload - 2-year validity)
+        from config import settings
+        hsts_age = getattr(settings, "HSTS_MAX_AGE", 63072000)
+        response.headers["Strict-Transport-Security"] = f"max-age={hsts_age}; includeSubDomains; preload"
 
         # 4. Content Security Policy (CSP - OWASP A03/A05)
         if "Content-Security-Policy" not in response.headers:

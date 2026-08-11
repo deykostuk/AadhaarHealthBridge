@@ -4,6 +4,8 @@ import pytest
 from io import BytesIO
 from unittest.mock import patch, MagicMock
 
+pytestmark = pytest.mark.unit
+
 # Bypass azure-storage-blob library installation dependency in testing
 mock_blob = MagicMock()
 sys.modules["azure"] = MagicMock()

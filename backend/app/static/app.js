@@ -125,14 +125,15 @@ class HealthBridgePWA {
         headers
       });
 
-      if (resp.status === 401) {
-        this.handleLogout();
-        throw new Error('Session expired. Please log in again.');
-      }
-
       const data = await resp.json().catch(() => ({}));
+
       if (!resp.ok) {
-        throw new Error(data.detail || data.message || `HTTP ${resp.status}`);
+        if (resp.status === 401 && !endpoint.includes('/auth/login')) {
+          this.handleLogout();
+          throw new Error('Session expired. Please log in again.');
+        }
+        const errorMsg = (typeof data.detail === 'object' ? data.detail?.message : data.detail) || data.message || `HTTP ${resp.status}`;
+        throw new Error(errorMsg || 'Request failed.');
       }
 
       return data;
@@ -160,7 +161,7 @@ class HealthBridgePWA {
       localStorage.setItem('hb_token', this.token);
       await this.loadUserProfile();
     } catch (err) {
-      if (errorEl) errorEl.textContent = err.message || 'Login failed.';
+      if (errorEl) errorEl.textContent = err.message || 'Invalid username or password.';
     }
   }
 

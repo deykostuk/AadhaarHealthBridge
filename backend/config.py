@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,6 +22,12 @@ class Settings:
     
     # Base URL for QR generation and absolute links
     APP_BASE_URL: str = os.getenv("APP_BASE_URL", "http://localhost:5000")
+    
+    # Transport Security: HTTPS / TLS 1.3 & 1.2 Settings
+    ENFORCE_HTTPS: bool = os.getenv("ENFORCE_HTTPS", "false").lower() in ["true", "1", "yes"]
+    SSL_CERT_PATH: Optional[str] = os.getenv("SSL_CERT_PATH", None)
+    SSL_KEY_PATH: Optional[str] = os.getenv("SSL_KEY_PATH", None)
+    HSTS_MAX_AGE: int = int(os.getenv("HSTS_MAX_AGE", "63072000")) # 2-year RFC 6797 HSTS preload
     
     # Upload folder
     UPLOAD_FOLDER: str = os.getenv(

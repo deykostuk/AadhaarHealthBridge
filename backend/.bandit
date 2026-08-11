@@ -1,0 +1,4 @@
+[bandit]
+targets = backend/app
+exclude = backend/tests,backend/venv,backend/uploads,backend/chroma_db
+skips = B101,B104

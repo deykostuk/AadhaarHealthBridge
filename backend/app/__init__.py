@@ -2,7 +2,7 @@ import os
 from contextlib import asynccontextmanager
 from typing import Optional, Mapping, Any
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse, FileResponse, Response
+from fastapi.responses import RedirectResponse, FileResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -168,9 +168,32 @@ def create_app() -> FastAPI:
     )
 
     # OWASP Top 10 & API Security Middlewares
-    from app.middleware.security import OWASPSecurityHeadersMiddleware, OWASPRateLimitMiddleware
+    from app.middleware.security import OWASPSecurityHeadersMiddleware, HTTPSTransportSecurityMiddleware
+    from app.middleware.rate_limiter import RateLimitMiddleware
+    app.add_middleware(HTTPSTransportSecurityMiddleware)
     app.add_middleware(OWASPSecurityHeadersMiddleware)
-    app.add_middleware(OWASPRateLimitMiddleware, general_limit_per_min=500, auth_limit_per_min=50)
+    app.add_middleware(RateLimitMiddleware)
+
+    # Standardized Pydantic v2 Validation Exception Handler
+    from fastapi.exceptions import RequestValidationError
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        formatted_errors = []
+        for err in exc.errors():
+            loc = " -> ".join([str(l) for l in err.get("loc", []) if l != "body"])
+            formatted_errors.append({
+                "field": loc or "payload",
+                "message": err.get("msg", "Invalid input value"),
+                "type": err.get("type", "validation_error")
+            })
+        return JSONResponse(
+            status_code=422,
+            content={
+                "status": "error",
+                "message": "Input validation failed. Please check your payload parameters.",
+                "errors": formatted_errors
+            }
+        )
 
     # Static Files Mounting
     if os.path.exists(STATIC_DIR):

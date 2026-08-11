@@ -1,6 +1,6 @@
 from app.database import SessionLocal, engine, Base
 from app.models.patient import User, VaultProfile, VaultAccess, Document, QRScanLog, HealthMetric
-from werkzeug.security import generate_password_hash
+from app.services.password_service import password_service
 
 # Ensure all tables exist
 Base.metadata.create_all(bind=engine)
@@ -18,10 +18,10 @@ try:
 
     print("Wiped existing database test records.")
 
-    # Create demo primary user
+    # Create demo primary user with Argon2id hash for "Demo1234!" (and fallback to "1234")
     user = User(
         username="kostuk",
-        password_hash=generate_password_hash("1234"),
+        password_hash=password_service.hash_password("Demo1234!"),
         role="family_member"
     )
     db.add(user)

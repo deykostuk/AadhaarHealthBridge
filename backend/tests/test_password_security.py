@@ -3,6 +3,8 @@ import bcrypt
 from werkzeug.security import generate_password_hash
 from app.services.password_service import PasswordService, password_service
 
+pytestmark = pytest.mark.unit
+
 def test_argon2id_hashing_and_verification():
     ps = PasswordService()
     raw_password = "SuperSecretMedicalPassword!2026"

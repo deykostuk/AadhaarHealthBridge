@@ -20,3 +20,5 @@ azure-storage-blob
 pydantic
 pytest
 httpx
+bandit>=1.7.9
+pip-audit>=2.7.3
