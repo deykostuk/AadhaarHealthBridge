@@ -18,8 +18,10 @@ bcrypt>=4.1.2
 sentence-transformers>=2.2.0
 azure-storage-blob
 pydantic
+pydantic-settings>=2.0.0
 pytest
 httpx
 bandit>=1.7.9
 pip-audit>=2.7.3
 werkzeug>=3.0.0
+
