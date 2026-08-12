@@ -563,6 +563,9 @@
 
       <!-- Authenticated User Menu & Logout -->
       <div id="user-controls" style="display: none; align-items: center; gap: 0.5rem;">
+        <button id="nav-sos-btn" class="btn btn-sm btn-danger" onclick="window.healthBridgeApp.triggerEmergencySOS()" style="box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); font-weight: 800;">
+          🚨 <span>SOS Alert</span>
+        </button>
         <span id="user-display-name" style="font-size: 0.85rem; font-weight: 700; color: var(--primary-light);"></span>
         <button id="logout-btn" class="btn btn-sm btn-danger">
           🚪 <span data-i18n="nav.logout">Logout</span>
@@ -682,14 +685,17 @@
             <p data-i18n="overview.subtitle" class="text-muted" style="font-size: 0.9rem;">HL7 FHIR R4 Compliant Personal Health Record</p>
           </div>
           <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button id="btn-broadcast-sos" class="btn btn-danger btn-sm" onclick="window.healthBridgeApp.triggerEmergencySOS()" style="box-shadow: 0 0 14px rgba(239, 68, 68, 0.45); font-weight: 800;">
+              🚨 <span>Broadcast Emergency SOS</span>
+            </button>
             <button id="edit-profile-modal-btn" class="btn btn-sm" onclick="window.healthBridgeApp.openEditProfileModal()">
               ✏️ <span data-i18n="overview.edit_profile">Edit Profile & Contacts</span>
             </button>
             <button id="export-fhir-btn" class="btn btn-primary btn-sm">
               📥 <span data-i18n="vault.export_fhir">Export FHIR R4 Bundle</span>
             </button>
-            <button id="quick-emergency-btn" class="btn btn-danger btn-sm" onclick="window.healthBridgeApp.switchTab('emergency')">
-              🚨 <span data-i18n="overview.emergency_pass">Emergency Pass</span>
+            <button id="quick-emergency-btn" class="btn btn-secondary btn-sm" onclick="window.healthBridgeApp.switchTab('emergency')">
+              🏷️ <span data-i18n="overview.emergency_pass">Emergency Pass</span>
             </button>
           </div>
         </div>
@@ -819,6 +825,25 @@
             <input type="text" id="files-search" data-i18n-placeholder="files.search_placeholder" class="form-control" placeholder="🔍 Search files by name or category..." style="max-width: 260px;" oninput="window.healthBridgeApp.filterFiles(this.value)">
             <button class="btn btn-primary btn-sm" onclick="window.healthBridgeApp.switchTab('documents')">
               + <span data-i18n="documents.upload_btn">Upload New PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hybrid Storage & Offline Device Cache Controls -->
+        <div class="glass-card" style="margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border-left: 4px solid #10b981;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 1.4rem;">⚡</span>
+            <div>
+              <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Hybrid Storage Mode Active</div>
+              <div class="text-muted" style="font-size: 0.76rem;">PDFs cached on-device for 100% offline access & backed up in encrypted vault</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button class="btn btn-sm" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;" onclick="window.healthBridgeApp.exportAllLocalVaultFiles()">
+              💾 Save All to Phone
+            </button>
+            <button class="btn btn-sm" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25);" onclick="window.healthBridgeApp.clearDeviceCache()">
+              🧹 Clear Device Cache
             </button>
           </div>
         </div>
