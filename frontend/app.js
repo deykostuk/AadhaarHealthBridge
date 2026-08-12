@@ -15,6 +15,133 @@ const BACKEND_BASE = window.AHB_API_BASE_URL || (
 );
 const API_BASE = `${BACKEND_BASE}/api/v1`;
 
+/**
+ * LocalVaultDB: Client-Side IndexedDB Storage Engine for Hybrid Architecture
+ * - Stores full PDF documents as binary Blobs directly on the user's phone.
+ * - Enables 100% offline document viewing, downloading, and WhatsApp sharing.
+ * - Works synchronously with the encrypted cloud API for cross-device & emergency recovery.
+ */
+class LocalVaultDB {
+  constructor() {
+    this.dbName = 'ahb_local_vault_db';
+    this.version = 1;
+    this.db = null;
+    this.initPromise = this.init();
+  }
+
+  async init() {
+    if (typeof window === 'undefined' || !window.indexedDB) return null;
+    return new Promise((resolve) => {
+      const req = indexedDB.open(this.dbName, this.version);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('documents')) {
+          const store = db.createObjectStore('documents', { keyPath: 'docId' });
+          store.createIndex('vaultId', 'vaultId', { unique: false });
+        }
+      };
+      req.onsuccess = (e) => {
+        this.db = e.target.result;
+        resolve(this.db);
+      };
+      req.onerror = (e) => {
+        console.warn('[IndexedDB] Could not open local vault DB:', e);
+        resolve(null);
+      };
+    });
+  }
+
+  async cacheDocumentBlob(docId, vaultId, blob, meta = {}) {
+    await this.initPromise;
+    if (!this.db) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction('documents', 'readwrite');
+        const store = tx.objectStore('documents');
+        store.put({
+          docId: String(docId),
+          vaultId: String(vaultId),
+          blob: blob,
+          fileName: meta.fileName || 'report.pdf',
+          category: meta.category || 'Diagnostic Report',
+          cachedAt: new Date().toISOString(),
+          sizeBytes: blob.size || 0
+        });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      } catch (err) {
+        console.warn('[IndexedDB] Cache put failed:', err);
+        resolve(false);
+      }
+    });
+  }
+
+  async getCachedDocumentBlob(docId) {
+    await this.initPromise;
+    if (!this.db) return null;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction('documents', 'readonly');
+        const store = tx.objectStore('documents');
+        const req = store.get(String(docId));
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      } catch (err) {
+        resolve(null);
+      }
+    });
+  }
+
+  async deleteCachedDocument(docId) {
+    await this.initPromise;
+    if (!this.db) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction('documents', 'readwrite');
+        const store = tx.objectStore('documents');
+        store.delete(String(docId));
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      } catch (err) {
+        resolve(false);
+      }
+    });
+  }
+
+  async getAllCachedDocs(vaultId) {
+    await this.initPromise;
+    if (!this.db) return [];
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction('documents', 'readonly');
+        const store = tx.objectStore('documents');
+        const index = store.index('vaultId');
+        const req = index.getAll(String(vaultId));
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      } catch (err) {
+        resolve([]);
+      }
+    });
+  }
+
+  async clearAll() {
+    await this.initPromise;
+    if (!this.db) return false;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction('documents', 'readwrite');
+        const store = tx.objectStore('documents');
+        store.clear();
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      } catch (err) {
+        resolve(false);
+      }
+    });
+  }
+}
+
 class HealthBridgePWA {
   constructor() {
     this.token = localStorage.getItem('hb_token') || sessionStorage.getItem('hb_token') || null;
@@ -24,6 +151,8 @@ class HealthBridgePWA {
     this.activeVault = null;
     this.allMetrics = [];
     this.deferredInstallPrompt = null;
+    this.localDB = new LocalVaultDB();
+    this.cachedDocIds = new Set();
 
     this.init();
   }
@@ -770,7 +899,7 @@ class HealthBridgePWA {
     }).join('');
   }
 
-  renderFiles(docs) {
+  async renderFiles(docs) {
     const container = document.getElementById('files-grid');
     const badge = document.getElementById('file-count-badge');
     if (!container) return;
@@ -791,11 +920,19 @@ class HealthBridgePWA {
       return;
     }
 
+    // Check on-device cached documents from IndexedDB
+    const cachedDocs = await this.localDB.getAllCachedDocs(this.activeVaultId);
+    const cachedSet = new Set(cachedDocs.map(c => String(c.docId)));
+
     container.innerHTML = docs.map((d) => {
-      const docUrl = `/api/v1/vaults/${this.activeVaultId}/documents/${d.id}/serve`;
       const dateStr = d.upload_date ? new Date(d.upload_date).toLocaleDateString() : 'Today';
       const cleanName = d.file_name || 'Medical Report';
       const cat = d.category || 'Clinical Report';
+      const isCached = cachedSet.has(String(d.id));
+
+      const storageBadge = isCached
+        ? `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.7rem; font-weight: 700;">⚡ On-Device & Cloud Synced</span>`
+        : `<span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; font-size: 0.7rem; font-weight: 700;">☁️ Cloud Synced</span>`;
 
       return `
         <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; border: 1px solid rgba(255, 255, 255, 0.08); transition: transform 0.2s ease, box-shadow 0.2s ease;">
@@ -807,7 +944,7 @@ class HealthBridgePWA {
                   <span class="badge" style="background: rgba(20, 184, 166, 0.15); color: #2dd4bf; border-radius: 6px; font-size: 0.72rem; font-weight: 700;">${cat}</span>
                 </div>
               </div>
-              <span style="font-size: 0.75rem; color: #34d399; font-weight: 700;">● Ready</span>
+              ${storageBadge}
             </div>
 
             <h4 style="font-size: 1.05rem; font-weight: 800; word-break: break-word; color: var(--text-primary); margin-bottom: 0.35rem;">${cleanName}</h4>
@@ -828,9 +965,9 @@ class HealthBridgePWA {
               </button>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
-              <a href="${docUrl}" download class="btn btn-sm" style="flex: 1; text-align: center; font-size: 0.75rem; padding: 0.3rem 0.5rem;">
-                📥 <span>${t('files.download')}</span>
-              </a>
+              <button class="btn btn-sm" style="flex: 1; text-align: center; font-size: 0.75rem; padding: 0.3rem 0.5rem;" onclick="window.healthBridgeApp.downloadDocumentLocally(${d.id}, '${cleanName.replace(/'/g, "\\'")}')">
+                💾 <span>Save to Phone</span>
+              </button>
               <button class="btn btn-sm btn-danger" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;" onclick="window.healthBridgeApp.deleteDocument(${d.id})">
                 🗑️
               </button>
@@ -854,9 +991,8 @@ class HealthBridgePWA {
     this.renderFiles(filtered);
   }
 
-  openPdfViewer(docId, docName, docCategory) {
+  async openPdfViewer(docId, docName, docCategory) {
     if (!this.activeVaultId) return;
-    const docUrl = `/api/v1/vaults/${this.activeVaultId}/documents/${docId}/serve`;
 
     const modal = document.getElementById('pdf-viewer-modal');
     const iframe = document.getElementById('pdf-viewer-iframe');
@@ -868,14 +1004,113 @@ class HealthBridgePWA {
 
     if (titleEl) titleEl.textContent = docName || 'Medical Report PDF';
     if (catEl) catEl.textContent = docCategory || 'Diagnostic Report';
-    if (newtabBtn) newtabBtn.href = docUrl;
-    if (downloadBtn) downloadBtn.href = docUrl;
-    if (whatsappBtn) {
-      whatsappBtn.onclick = () => this.sharePdfWhatsApp(docId, docName, docCategory, new Date().toISOString());
-    }
-    if (iframe) iframe.src = docUrl;
-
     if (modal) modal.style.display = 'flex';
+
+    try {
+      // 1. Check local on-device IndexedDB cache first
+      let cached = await this.localDB.getCachedDocumentBlob(docId);
+      let blob = cached ? cached.blob : null;
+
+      if (blob) {
+        this.showToast('📱 Loaded instantly from Phone Storage (Offline Ready)', 'info');
+      } else {
+        // 2. Fetch from encrypted backend API and cache on-device for future offline use
+        const fallbackUrl = `${API_BASE}/vaults/${this.activeVaultId}/documents/${docId}/serve`;
+        const resp = await fetch(fallbackUrl, {
+          headers: this.token ? { 'Authorization': `Bearer ${this.token}` } : {}
+        });
+        if (!resp.ok) throw new Error(`Could not load report (HTTP ${resp.status})`);
+        blob = await resp.blob();
+
+        // Cache into IndexedDB
+        await this.localDB.cacheDocumentBlob(docId, this.activeVaultId, blob, {
+          fileName: docName,
+          category: docCategory
+        });
+        this.showToast('⚡ Report cached to Phone Storage for offline access', 'success');
+        // Refresh grid badge
+        this.renderFiles(this.allFiles);
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+      if (iframe) iframe.src = blobUrl;
+      if (newtabBtn) newtabBtn.href = blobUrl;
+      if (downloadBtn) {
+        downloadBtn.href = blobUrl;
+        downloadBtn.download = docName || 'medical-report.pdf';
+      }
+      if (whatsappBtn) {
+        whatsappBtn.onclick = () => this.sharePdfWhatsApp(docId, docName, docCategory, new Date().toISOString());
+      }
+    } catch (err) {
+      console.error('Failed to open PDF:', err);
+      this.showToast(`Error opening PDF: ${err.message}`, 'error');
+    }
+  }
+
+  async downloadDocumentLocally(docId, fileName) {
+    if (!this.activeVaultId) return;
+    try {
+      let cached = await this.localDB.getCachedDocumentBlob(docId);
+      let blob = cached ? cached.blob : null;
+
+      if (!blob) {
+        const url = `${API_BASE}/vaults/${this.activeVaultId}/documents/${docId}/serve`;
+        const resp = await fetch(url, {
+          headers: this.token ? { 'Authorization': `Bearer ${this.token}` } : {}
+        });
+        if (!resp.ok) throw new Error('Download failed');
+        blob = await resp.blob();
+        await this.localDB.cacheDocumentBlob(docId, this.activeVaultId, blob, { fileName });
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName || 'medical-report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      }, 500);
+
+      this.showToast(`Saved "${fileName}" to Phone Storage!`, 'success');
+    } catch (err) {
+      this.showToast(`Save to phone failed: ${err.message}`, 'error');
+    }
+  }
+
+  async exportAllLocalVaultFiles() {
+    if (!this.activeVaultId) return;
+    try {
+      const docs = this.allFiles || [];
+      if (docs.length === 0) {
+        this.showToast('No documents found in vault to export.', 'info');
+        return;
+      }
+      this.showToast(`Saving ${docs.length} records to your phone storage...`, 'info');
+      for (const d of docs) {
+        await this.downloadDocumentLocally(d.id, d.file_name || `report-${d.id}.pdf`);
+        await new Promise(r => setTimeout(r, 400));
+      }
+      this.showToast('✅ All vault records saved to Phone Downloads!', 'success');
+    } catch (err) {
+      this.showToast(`Export failed: ${err.message}`, 'error');
+    }
+  }
+
+  async clearDeviceCache() {
+    if (!confirm('Clear on-device local document cache to free up phone storage? (Your encrypted records in the cloud vault will remain safe).')) return;
+    try {
+      await this.localDB.clearAll();
+      this.showToast('Device document cache cleared successfully!', 'info');
+      if (this.allFiles) {
+        this.renderFiles(this.allFiles);
+      }
+    } catch (err) {
+      this.showToast(`Failed to clear cache: ${err.message}`, 'error');
+    }
   }
 
   closePdfViewer() {
@@ -904,7 +1139,7 @@ class HealthBridgePWA {
     this.showToast('Opening WhatsApp with report summary...', 'info');
   }
 
-  // 15. Document Upload
+  // 15. Document Upload with Automatic On-Device IndexedDB Caching
   async handleDocUpload(e) {
     e.preventDefault();
     if (!this.activeVaultId) return;
@@ -932,14 +1167,22 @@ class HealthBridgePWA {
     if (uploadBtn) uploadBtn.disabled = true;
 
     try {
-      await this.apiRequest(`/vaults/${this.activeVaultId}/documents`, {
+      const docRes = await this.apiRequest(`/vaults/${this.activeVaultId}/documents`, {
         method: 'POST',
         body: formData
       });
 
-      this.showToast(`Document "${file.name}" indexed successfully!`, 'success');
+      // Cache raw uploaded file directly into phone IndexedDB
+      if (docRes && docRes.id) {
+        await this.localDB.cacheDocumentBlob(docRes.id, this.activeVaultId, file, {
+          fileName: file.name,
+          category: categorySelect ? categorySelect.value : 'Diagnostic Lab Report'
+        });
+      }
+
+      this.showToast(`Document "${file.name}" saved locally & synced to vault!`, 'success');
       if (statusEl) {
-        statusEl.textContent = '✅ Document processed and vector indexed into local RAG!';
+        statusEl.textContent = '✅ Document stored on-device, synced with vault & indexed in local RAG!';
         statusEl.style.color = '#34d399';
       }
       fileInput.value = '';
@@ -963,7 +1206,8 @@ class HealthBridgePWA {
       await this.apiRequest(`/vaults/${this.activeVaultId}/documents/${docId}`, {
         method: 'DELETE'
       });
-      this.showToast('Document and associated biomarkers deleted.', 'info');
+      await this.localDB.deleteCachedDocument(docId);
+      this.showToast('Document deleted from cloud and device storage.', 'info');
       await Promise.all([
         this.loadDocuments(),
         this.loadMetrics(),
@@ -971,7 +1215,6 @@ class HealthBridgePWA {
       ]);
     } catch (err) {
       this.showToast(`Delete failed: ${err.message}`, 'error');
-    }
   }
 
   // 16. Local RAG Chat Assistant

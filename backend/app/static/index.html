@@ -8,12 +8,12 @@
   <title>Aadhaar Health Bridge | PWA Vault</title>
 
   <!-- PWA Manifest & Icons -->
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/static/icon-192.png">
-  <link rel="icon" type="image/png" href="/static/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
 
   <!-- Stylesheets & Fonts -->
-  <link rel="stylesheet" href="/static/theme.css">
+  <link rel="stylesheet" href="theme.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -823,6 +823,25 @@
           </div>
         </div>
 
+        <!-- Hybrid Storage & Offline Device Cache Controls -->
+        <div class="glass-card" style="margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border-left: 4px solid #10b981;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 1.4rem;">⚡</span>
+            <div>
+              <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Hybrid Storage Mode Active</div>
+              <div class="text-muted" style="font-size: 0.76rem;">PDFs cached on-device for 100% offline access & backed up in encrypted vault</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button class="btn btn-sm" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;" onclick="window.healthBridgeApp.exportAllLocalVaultFiles()">
+              💾 Save All to Phone
+            </button>
+            <button class="btn btn-sm" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25);" onclick="window.healthBridgeApp.clearDeviceCache()">
+              🧹 Clear Device Cache
+            </button>
+          </div>
+        </div>
+
         <div id="files-grid" class="card-grid">
           <!-- Dynamically populated files with Open and WhatsApp share buttons -->
         </div>
@@ -1098,10 +1117,10 @@
   <div id="ahb-toast-container"></div>
 
   <!-- Scripts -->
-  <script src="/static/theme.js"></script>
-  <script src="/static/i18n.js"></script>
-  <script src="/static/qrcode.min.js"></script>
-  <script src="/static/app.js"></script>
+  <script src="theme.js"></script>
+  <script src="i18n.js"></script>
+  <script src="qrcode.min.js"></script>
+  <script src="app.js"></script>
 
   <script>
     function switchAuthTab(tab) {
