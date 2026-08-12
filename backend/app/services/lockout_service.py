@@ -9,7 +9,7 @@ class AccountLockoutService:
     while preventing account denial-of-service against legitimate users from other IPs.
     """
 
-    def __init__(self, max_attempts: int = 5, lockout_duration_seconds: int = 900):
+    def __init__(self, max_attempts: int = 10, lockout_duration_seconds: int = 900):
         self.max_attempts = max_attempts
         self.lockout_duration = lockout_duration_seconds
         self._failed_attempts: Dict[str, int] = {}
