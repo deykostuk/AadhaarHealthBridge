@@ -901,15 +901,36 @@
 
       <!-- Tab 6: Emergency QR -->
       <div id="tab-emergency" class="tab-content">
-        <div style="margin-bottom: 1.5rem;">
-          <h2 data-i18n="emergency.title" style="font-size: 1.6rem; font-weight: 800;">Offline Paramedic Emergency Pass</h2>
-          <p data-i18n="emergency.subtitle" class="text-muted" style="font-size: 0.9rem;">Paramedic glass-breaker access for first responders with zero network connectivity</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+          <div>
+            <h2 data-i18n="emergency.title" style="font-size: 1.6rem; font-weight: 800;">Offline Paramedic Emergency Pass</h2>
+            <p data-i18n="emergency.subtitle" class="text-muted" style="font-size: 0.9rem;">Paramedic glass-breaker access for first responders with zero network connectivity</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem;">
+            <button class="btn btn-primary" onclick="window.healthBridgeApp.openCameraScanner()" style="box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); font-weight: 800;">
+              📷 <span>Scan Patient Offline QR</span>
+            </button>
+          </div>
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; align-items: start;">
           <div class="glass-card" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+              <button id="qr-mode-crypto-btn" class="btn btn-sm btn-primary" onclick="window.healthBridgeApp.switchQrMode('crypto')">
+                🔐 Signed ECDSA Offline
+              </button>
+              <button id="qr-mode-url-btn" class="btn btn-sm" onclick="window.healthBridgeApp.switchQrMode('url')">
+                🌐 Online Web Pass
+              </button>
+            </div>
+
             <div id="emergency-qr-code" style="padding: 1.25rem; background: white; border-radius: 16px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);"></div>
-            <h4 data-i18n="emergency.scan_title" style="margin-top: 1.25rem; font-size: 1.1rem; font-weight: 800;">Scan for Emergency Medical Brief</h4>
+            <div id="qr-crypto-seal-badge" style="margin-top: 0.75rem;">
+              <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 800; font-size: 0.75rem;">
+                🛡️ ECDSA-P256 Cryptographic Tamper Seal Active
+              </span>
+            </div>
+            <h4 data-i18n="emergency.scan_title" style="margin-top: 0.85rem; font-size: 1.1rem; font-weight: 800;">Scan for Emergency Medical Brief</h4>
             <p data-i18n="emergency.scan_subtitle" class="text-muted" style="font-size: 0.85rem; margin-top: 0.35rem;">Point any phone camera or scanner to decrypt vital triage card</p>
             
             <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; width: 100%;">
@@ -931,7 +952,7 @@
               <li style="display: flex; align-items: center; gap: 0.5rem;">✅ <strong data-i18n="emergency.triage_allergies">Critical Allergies & Anaphylaxis Warnings</strong></li>
               <li style="display: flex; align-items: center; gap: 0.5rem;">✅ <strong data-i18n="emergency.triage_conditions">Chronic Conditions & Active Prescriptions</strong></li>
               <li style="display: flex; align-items: center; gap: 0.5rem;">✅ <strong data-i18n="emergency.triage_call">1-Touch Emergency Caregiver Call Bridge</strong></li>
-              <li style="display: flex; align-items: center; gap: 0.5rem;">🔒 <strong data-i18n="emergency.triage_crypto">Zero-Knowledge Client-Side AES Decryption</strong></li>
+              <li style="display: flex; align-items: center; gap: 0.5rem;">🔒 <strong data-i18n="emergency.triage_crypto">Zero-Trust Offline ECDSA-P256 Asymmetric Signature</strong></li>
             </ul>
           </div>
         </div>
@@ -1119,6 +1140,100 @@
     </div>
   </div>
 
+  <!-- Camera Scanner Modal for Paramedics & Offline Verification -->
+  <div id="camera-scanner-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 540px; padding: 1.5rem; text-align: center;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+          <span>📷</span> <span>Offline Emergency QR Scanner</span>
+        </h3>
+        <button class="btn btn-sm" onclick="window.healthBridgeApp.closeCameraScanner()">✕</button>
+      </div>
+
+      <p class="text-muted" style="font-size: 0.82rem; margin-bottom: 1rem;">
+        Point your camera at a patient's Emergency QR Code. Works 100% offline via ECDSA-P256 Web Crypto verification.
+      </p>
+
+      <!-- Viewfinder Box -->
+      <div style="position: relative; width: 100%; height: 300px; background: #000; border-radius: 16px; overflow: hidden; border: 2px solid rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center;">
+        <video id="camera-stream" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+        
+        <!-- Scanner Reticle Frame & Laser -->
+        <div style="position: absolute; width: 220px; height: 220px; border: 2px dashed rgba(16, 185, 129, 0.8); border-radius: 12px; pointer-events: none; box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);">
+          <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: #34d399; box-shadow: 0 0 10px #10b981; animation: scanLaser 2s infinite ease-in-out;"></div>
+        </div>
+
+        <canvas id="camera-canvas" style="display: none;"></canvas>
+      </div>
+
+      <!-- Scanner Controls -->
+      <div style="display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: center; flex-wrap: wrap;">
+        <button id="btn-flip-camera" class="btn btn-sm" onclick="window.healthBridgeApp.flipCamera()">
+          🔄 Flip Camera
+        </button>
+        <button class="btn btn-sm" onclick="document.getElementById('qr-photo-input').click()">
+          📁 Scan Image / Photo
+        </button>
+        <input type="file" id="qr-photo-input" accept="image/*" style="display: none;" onchange="window.healthBridgeApp.handleQrPhotoUpload(event)">
+      </div>
+      <div id="scanner-status" style="margin-top: 0.75rem; font-size: 0.82rem; color: #34d399; font-weight: 700;">
+        ⚡ Ready. Align QR code inside reticle...
+      </div>
+    </div>
+  </div>
+
+  <!-- Offline Emergency Triage Modal (Rendered upon successful scan) -->
+  <div id="emergency-triage-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 580px; padding: 1.75rem; border: 2px solid #10b981; box-shadow: 0 0 35px rgba(16, 185, 129, 0.25);">
+      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+        <div>
+          <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 800; font-size: 0.75rem; padding: 0.35rem 0.75rem;">
+            🛡️ VERIFIED ECDSA-P256 PASS
+          </span>
+          <h2 id="triage-patient-name" style="font-size: 1.5rem; font-weight: 800; margin-top: 0.5rem;">Patient Name</h2>
+        </div>
+        <div id="triage-blood-badge" style="background: #ef4444; color: white; font-weight: 900; font-size: 1.6rem; padding: 0.4rem 1rem; border-radius: 12px; box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);">
+          O+
+        </div>
+      </div>
+
+      <!-- Critical Warnings Box -->
+      <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+        <div style="color: #f87171; font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.35rem;">
+          <span>⚠️</span> <span>CRITICAL MEDICAL WARNINGS</span>
+        </div>
+        <div id="triage-allergies" style="font-size: 0.9rem; font-weight: 700; color: #fecdd3;">None recorded</div>
+      </div>
+
+      <!-- Conditions & Meds -->
+      <div class="card-grid" style="grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div class="glass-card" style="padding: 0.75rem;">
+          <small class="text-muted" style="font-size: 0.72rem; font-weight: 700;">CHRONIC CONDITIONS</small>
+          <div id="triage-conditions" style="font-weight: 700; font-size: 0.88rem; margin-top: 0.25rem;">None recorded</div>
+        </div>
+        <div class="glass-card" style="padding: 0.75rem;">
+          <small class="text-muted" style="font-size: 0.72rem; font-weight: 700;">ACTIVE MEDICATIONS</small>
+          <div id="triage-meds" style="font-weight: 700; font-size: 0.88rem; margin-top: 0.25rem;">None recorded</div>
+        </div>
+      </div>
+
+      <!-- Emergency Caregivers Contact Direct Callers -->
+      <div style="margin-bottom: 1.25rem;">
+        <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-muted); margin-bottom: 0.5rem;">
+          👨‍👩‍👧 1-TOUCH EMERGENCY CAREGIVER CALL
+        </div>
+        <div id="triage-contacts-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+      </div>
+
+      <!-- Close / Dismiss -->
+      <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-primary" style="flex: 1;" onclick="window.healthBridgeApp.closeEmergencyTriageModal()">
+          ✓ Done / Close Triage Brief
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Global Toast Notification Container -->
   <div id="ahb-toast-container"></div>
 
@@ -1126,6 +1241,7 @@
   <script src="theme.js"></script>
   <script src="i18n.js"></script>
   <script src="qrcode.min.js"></script>
+  <script src="crypto_verifier.js"></script>
   <script src="app.js"></script>
 
   <script>

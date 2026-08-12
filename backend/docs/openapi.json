@@ -426,6 +426,26 @@
         ]
       }
     },
+    "/api/v1/auth/public-key": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get Offline Qr Public Key",
+        "description": "Public Key Distribution for Offline Cryptographic QR Verification.\nReturns ECDSA-P256 public key in PEM and JWK format for browser Web Crypto API.",
+        "operationId": "get_offline_qr_public_key_api_v1_auth_public_key_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/vaults": {
       "get": {
         "tags": [
@@ -819,6 +839,56 @@
                     "$ref": "#/components/schemas/SOSAlertLogOut"
                   },
                   "title": "Response Get Vault Sos History Api V1 Vaults  Vault Id  Sos History Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vaults/{vault_id}/crypto-qr": {
+      "get": {
+        "tags": [
+          "Vaults"
+        ],
+        "summary": "Get Vault Cryptographic Qr",
+        "description": "Generates ECDSA-P256 digitally signed offline emergency QR payload.\nCan be scanned and verified 100% offline in rural clinics and disaster zones.",
+        "operationId": "get_vault_cryptographic_qr_api_v1_vaults__vault_id__crypto_qr_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Vault Cryptographic Qr Api V1 Vaults  Vault Id  Crypto Qr Get"
                 }
               }
             }
@@ -1356,6 +1426,54 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Get Emergency Scan Contacts Api V1 Scan  Token  Contacts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scan/verify-offline": {
+      "post": {
+        "tags": [
+          "Emergency QR Scan & SOS Alerts"
+        ],
+        "summary": "Verify Offline Qr Payload",
+        "description": "Verifies an ECDSA-P256 digitally signed offline emergency QR string (AHB1...).\nReturns decoded triage profile and cryptographic authenticity status.",
+        "operationId": "verify_offline_qr_payload_api_v1_scan_verify_offline_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Verify Offline Qr Payload Api V1 Scan Verify Offline Post"
                 }
               }
             }

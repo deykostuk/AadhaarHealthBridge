@@ -192,3 +192,19 @@ async def change_password(
     db.commit()
 
     return {"status": "success", "message": "Password changed successfully."}
+
+
+@router.get("/public-key")
+async def get_offline_qr_public_key():
+    """
+    Public Key Distribution for Offline Cryptographic QR Verification.
+    Returns ECDSA-P256 public key in PEM and JWK format for browser Web Crypto API.
+    """
+    from app.services.crypto_qr_service import crypto_qr_service
+    return {
+        "status": "active",
+        "algorithm": "ECDSA-SHA256 (SECP256R1)",
+        "jwk": crypto_qr_service.get_public_key_jwk(),
+        "pem": crypto_qr_service.get_public_key_pem()
+    }
+

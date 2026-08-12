@@ -142,3 +142,30 @@ async def get_vault_sos_history(
         SOSAlertLog.vault_id == vault_id
     ).order_by(SOSAlertLog.created_at.desc()).limit(limit).all()
 
+
+@router.get("/{vault_id}/crypto-qr")
+async def get_vault_cryptographic_qr(
+    vault_id: int,
+    vault_and_access: Tuple[VaultProfile, str] = Depends(RequireVaultPermission(Permission.VAULT_READ)),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Generates ECDSA-P256 digitally signed offline emergency QR payload.
+    Can be scanned and verified 100% offline in rural clinics and disaster zones.
+    """
+    from app.services.crypto_qr_service import crypto_qr_service
+    vault, _ = vault_and_access
+
+    signed_qr_payload = crypto_qr_service.generate_signed_qr_payload(vault)
+
+    return {
+        "status": "success",
+        "vault_id": vault.id,
+        "patient_name": vault.full_name,
+        "signed_qr_payload": signed_qr_payload,
+        "format": "AHB1.<zlib_payload_b64>.<ecdsa_p256_sig_b64>",
+        "payload_length_bytes": len(signed_qr_payload),
+        "offline_verified": True
+    }
+
+

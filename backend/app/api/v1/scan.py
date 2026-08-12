@@ -95,3 +95,32 @@ async def get_emergency_scan_contacts(
         "emergency_contacts": contacts,
         "default_alert_message": alert_msg
     }
+
+
+@router.post("/verify-offline")
+async def verify_offline_qr_payload(
+    payload: Dict[str, str]
+) -> Dict[str, Any]:
+    """
+    Verifies an ECDSA-P256 digitally signed offline emergency QR string (AHB1...).
+    Returns decoded triage profile and cryptographic authenticity status.
+    """
+    from app.services.crypto_qr_service import crypto_qr_service
+    raw_payload = payload.get("raw_payload", "").strip()
+    if not raw_payload:
+        raise HTTPException(status_code=400, detail={"status": "error", "message": "Missing raw_payload field."})
+
+    is_valid, data, err = crypto_qr_service.verify_signed_qr_payload(raw_payload)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"status": "error", "message": err or "Cryptographic signature invalid or data tampered."}
+        )
+
+    return {
+        "status": "success",
+        "cryptographic_verification": "VALID_ECDSA_P256_SEAL",
+        "triage_profile": data,
+        "warning": err
+    }
+
