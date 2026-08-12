@@ -211,9 +211,17 @@ def create_app() -> FastAPI:
         https_only=settings.ENFORCE_HTTPS or (settings.ENVIRONMENT == "production")
     )
 
-    # OWASP Top 10 & API Security Middlewares
+    # OWASP Top 10, Request Tracing & API Security Middlewares
     from app.middleware.security import OWASPSecurityHeadersMiddleware, HTTPSTransportSecurityMiddleware
     from app.middleware.rate_limiter import RateLimitMiddleware
+    from app.middleware.logging_middleware import RequestLoggingAndTracingMiddleware
+    from app.utils.logger import setup_logging
+
+    # Initialize structured logging
+    setup_logging(level="INFO", json_format=(settings.ENVIRONMENT == "production"))
+
+    # Tracing & Access Logging (captures correlation_id, duration_ms, status_code)
+    app.add_middleware(RequestLoggingAndTracingMiddleware)
 
     # CORS Middleware (placed before security headers/rate limiter to properly handle preflight and error responses)
     app.add_middleware(
