@@ -3,7 +3,7 @@ import jwt
 import datetime
 from config import settings
 from app.models.patient import User, VaultProfile, VaultAccess
-from app.middleware.security import SSRFValidator, OWASPRateLimitMiddleware
+from app.middleware.security import SSRFValidator
 
 def test_owasp_security_headers_present(client):
     res = client.get("/api/v1/health")

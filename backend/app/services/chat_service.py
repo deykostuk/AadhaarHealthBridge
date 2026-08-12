@@ -1,7 +1,6 @@
 import os
 import re
 import logging
-import requests
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 

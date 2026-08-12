@@ -155,21 +155,28 @@ def create_app() -> FastAPI:
         secret_key=settings.SECRET_KEY,
         session_cookie="ahb_session",
         max_age=86400 * 7,
-        same_site="lax"
-    )
-
-    # CORS Middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        same_site="lax",
+        https_only=settings.ENFORCE_HTTPS or (settings.ENVIRONMENT == "production")
     )
 
     # OWASP Top 10 & API Security Middlewares
     from app.middleware.security import OWASPSecurityHeadersMiddleware, HTTPSTransportSecurityMiddleware
     from app.middleware.rate_limiter import RateLimitMiddleware
+
+    # CORS Middleware (placed before security headers/rate limiter to properly handle preflight and error responses)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+        allow_origins=[
+            "http://localhost:5000",
+            "http://127.0.0.1:5000",
+            settings.APP_BASE_URL.rstrip("/")
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     app.add_middleware(HTTPSTransportSecurityMiddleware)
     app.add_middleware(OWASPSecurityHeadersMiddleware)
     app.add_middleware(RateLimitMiddleware)

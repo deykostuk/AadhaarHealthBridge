@@ -47,6 +47,18 @@ class LoginRequest(StrictInputModel):
         return str(v).replace("\x00", "")
 
 
+class ChangePasswordRequest(StrictInputModel):
+    old_password: str
+    new_password: str
+
+    @field_validator("old_password", "new_password", mode="before")
+    @classmethod
+    def validate_password_field(cls, v):
+        if not v or len(str(v)) < 6:
+            raise ValueError("Password must be at least 6 characters long.")
+        return str(v).replace("\x00", "")
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -174,6 +186,7 @@ class VaultUpdateRequest(StrictInputModel):
     emergency_3_name: Optional[str] = None
     emergency_3_relation: Optional[str] = None
     emergency_3_phone: Optional[str] = None
+    is_emergency_ready: Optional[bool] = None
 
     @field_validator("full_name", "allergies", "medical_conditions", "medications", "address",
                      "emergency_1_name", "emergency_1_relation", "emergency_2_name", "emergency_2_relation",
@@ -196,6 +209,7 @@ class VaultUpdateRequest(StrictInputModel):
 class FamilyMemberCreateRequest(VaultProfileBase):
     username: str
     password: str
+    is_emergency_ready: Optional[bool] = False
 
     @field_validator("username", mode="before")
     @classmethod
@@ -219,6 +233,8 @@ class VaultListItemOut(BaseModel):
     qr_token: str
     owner_user_id: int
     access_type: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VaultDetailOut(BaseModel):

@@ -41,6 +41,9 @@ class Settings:
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "chroma_db")
     )
 
+    # Distributed Cache & Rate Limiting (Redis)
+    REDIS_URL: Optional[str] = os.getenv("REDIS_URL", None)
+
     # Cloud Storage Credentials
     AZURE_STORAGE_ACCOUNT: str = os.getenv("AZURE_STORAGE_ACCOUNT", "")
     AZURE_STORAGE_CONTAINER: str = os.getenv("AZURE_STORAGE_CONTAINER", "health-vault")

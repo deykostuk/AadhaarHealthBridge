@@ -11,7 +11,7 @@ from app.models.patient import VaultProfile
 
 router = APIRouter(prefix="/vaults/{vault_id}", tags=["Health Metrics"])
 
-@router.get("/metrics")
+@router.get("/metrics", response_model=List[HealthMetricOut])
 async def get_metrics(
     vault_id: int,
     metric: Optional[str] = None,
@@ -21,12 +21,7 @@ async def get_metrics(
     """REST API: Get time-series health metrics with resource-level authorization."""
     metric_service = HealthMetricService(db)
     metrics = metric_service.get_vault_metrics(vault_id, metric)
-
-    return {
-        "vault_id": vault_id,
-        "metric_name": metric,
-        "metrics": metrics
-    }
+    return metrics
 
 @router.get("/snapshot", response_model=HealthSnapshotResponse)
 async def get_snapshot(

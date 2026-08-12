@@ -1,5 +1,5 @@
 import datetime
-from datetime import timedelta
+from datetime import timedelta, timezone
 import json
 import urllib.request
 from typing import Optional, List, Dict, Any, Tuple
@@ -16,22 +16,23 @@ class VaultService:
         self.db = db
 
     def get_user_vaults(self, user_id: int) -> List[Dict[str, Any]]:
-        """Returns all vaults accessible to the user (owned or shared caregiver access)."""
-        access_records = self.db.query(VaultAccess).filter(VaultAccess.user_id == user_id).all()
+        """Returns all vaults accessible to the user (owned or shared caregiver access) via a single JOIN query."""
+        results = self.db.query(VaultProfile, VaultAccess.access_type).join(
+            VaultAccess, VaultAccess.vault_id == VaultProfile.id
+        ).filter(VaultAccess.user_id == user_id).all()
+
         vaults = []
-        for access in access_records:
-            vault = self.db.query(VaultProfile).filter(VaultProfile.id == access.vault_id).first()
-            if vault:
-                vaults.append({
-                    "id": vault.id,
-                    "relation": vault.relation,
-                    "full_name": vault.full_name,
-                    "blood_group": vault.blood_group,
-                    "allergies": vault.allergies,
-                    "qr_token": vault.qr_token,
-                    "owner_user_id": vault.owner_user_id,
-                    "access_type": access.access_type
-                })
+        for vault, access_type in results:
+            vaults.append({
+                "id": vault.id,
+                "relation": vault.relation,
+                "full_name": vault.full_name,
+                "blood_group": vault.blood_group,
+                "allergies": vault.allergies,
+                "qr_token": vault.qr_token,
+                "owner_user_id": vault.owner_user_id,
+                "access_type": access_type
+            })
         return vaults
 
     def get_vault_by_id_and_user(self, vault_id: int, user_id: int) -> Tuple[Optional[VaultProfile], Optional[str]]:
@@ -84,7 +85,8 @@ class VaultService:
             emergency_2_phone=form_data.get("emergency_2_phone"),
             emergency_3_name=form_data.get("emergency_3_name"),
             emergency_3_relation=form_data.get("emergency_3_relation"),
-            emergency_3_phone=form_data.get("emergency_3_phone")
+            emergency_3_phone=form_data.get("emergency_3_phone"),
+            is_emergency_ready=bool(form_data.get("is_emergency_ready", False))
         )
         self.db.add(vault)
         self.db.flush()
@@ -96,13 +98,16 @@ class VaultService:
         return vault, None
 
     def update_vault_profile(self, vault_id: int, user_id: int, form_data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
-        """Updates clinical and emergency contact fields on a vault."""
+        """Updates clinical and emergency contact fields on a vault with strict RBAC."""
         access = self.db.query(VaultAccess).filter(
             VaultAccess.user_id == user_id,
             VaultAccess.vault_id == vault_id
         ).first()
         if not access:
             return False, "Unauthorized access."
+
+        if access.access_type not in ["owner", "caregiver"]:
+            return False, f"Unauthorized: Access type '{access.access_type}' cannot modify vault profile."
 
         vault = self.db.query(VaultProfile).filter(VaultProfile.id == vault_id).first()
         if not vault:
@@ -125,6 +130,9 @@ class VaultService:
         vault.emergency_3_relation = form_data.get("emergency_3_relation", vault.emergency_3_relation)
         vault.emergency_3_phone = form_data.get("emergency_3_phone", vault.emergency_3_phone)
 
+        if "is_emergency_ready" in form_data and form_data["is_emergency_ready"] is not None:
+            vault.is_emergency_ready = bool(form_data["is_emergency_ready"])
+
         self.db.commit()
         return True, None
 
@@ -141,7 +149,7 @@ class VaultService:
             ip_address=ip,
             user_agent=user_agent,
             location_data=location,
-            timestamp=datetime.datetime.utcnow()
+            timestamp=datetime.datetime.now(timezone.utc).replace(tzinfo=None)
         )
         self.db.add(new_log)
         self.db.commit()
@@ -172,8 +180,14 @@ class VaultService:
         if not ip or ip in ["127.0.0.1", "localhost", "::1"] or ip.startswith("192.168.") or ip.startswith("10.") or ip.startswith("172.16."):
             return "Kanpur, Uttar Pradesh (Local Host)"
 
+        import re
+        # Validate that IP contains only valid IPv4/IPv6 characters
+        clean_ip = re.sub(r"[^0-9a-fA-F:\.]", "", ip.strip())
+        if not clean_ip:
+            return "Unknown Location"
+
         try:
-            url = f"http://ip-api.com/json/{ip}"
+            url = f"https://ip-api.com/json/{clean_ip}"
             req = urllib.request.Request(url, headers={'User-Agent': 'AadhaarHealthBridge/1.0'})
             with urllib.request.urlopen(req, timeout=3) as response:  # nosec B310
                 data = json.loads(response.read().decode())

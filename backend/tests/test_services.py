@@ -116,6 +116,16 @@ def test_vault_service_management(db):
     assert update_err is None
     assert child_vault.full_name == "Updated Child Name"
     
+    # Verify viewer access cannot update vault profile
+    viewer_user, _ = auth_service.register_user("viewer_user", "viewer123")
+    from app.models.patient import VaultAccess
+    db.add(VaultAccess(user_id=viewer_user.id, vault_id=child_vault.id, access_type="viewer"))
+    db.commit()
+
+    v_success, v_err = vault_service.update_vault_profile(child_vault.id, viewer_user.id, {"full_name": "Hacked Name"})
+    assert v_success is False
+    assert "cannot modify vault profile" in v_err
+
     # Log QR scan
     scanned_vault, loc = vault_service.log_qr_scan(child_vault.qr_token, "127.0.0.1", "Mozilla/5.0 (iPhone)")
     assert scanned_vault.id == child_vault.id

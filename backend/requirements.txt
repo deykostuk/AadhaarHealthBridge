@@ -22,3 +22,4 @@ pytest
 httpx
 bandit>=1.7.9
 pip-audit>=2.7.3
+werkzeug>=3.0.0

@@ -1,4 +1,5 @@
 import datetime
+from datetime import timezone
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -15,7 +16,7 @@ async def health_check():
         "status": "ok",
         "service": "Aadhaar Health Bridge API",
         "version": "1.0.0",
-        "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.datetime.now(timezone.utc).isoformat()
     }
 
 @router.get("/health/db")
@@ -34,6 +35,6 @@ async def health_check_db(db: Session = Depends(get_db)):
         content={
             "status": "ok" if db_status == "connected" else "degraded",
             "database": db_status,
-            "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
+            "timestamp": datetime.datetime.now(timezone.utc).isoformat()
         }
     )

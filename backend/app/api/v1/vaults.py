@@ -83,3 +83,16 @@ async def get_vault_scan_logs(
     """REST API: Retrieve QR emergency scan audit logs with resource-level authorization."""
     vault_service = VaultService(db)
     return vault_service.get_recent_scan_logs(vault_id, limit=limit)
+
+@router.delete("/{vault_id}")
+async def delete_vault(
+    vault_id: int,
+    current_user: User = Depends(get_current_user_hybrid),
+    vault_and_access: Tuple[VaultProfile, str] = Depends(RequireVaultPermission(Permission.VAULT_DELETE)),
+    db: Session = Depends(get_db)
+):
+    """REST API: Delete medical vault profile with owner permissions."""
+    vault, _ = vault_and_access
+    db.delete(vault)
+    db.commit()
+    return {"status": "success", "message": f"Vault profile {vault_id} deleted successfully."}

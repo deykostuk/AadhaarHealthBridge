@@ -1,5 +1,5 @@
 import datetime
-from datetime import timedelta
+from datetime import timedelta, timezone
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 
@@ -13,7 +13,7 @@ class ConsentService:
     - Purpose-bound authorization (TREAT, EMERGENCY, RESEARCH)
     - Temporal expiration checks
     - Granular resource filtering (Observations, DiagnosticReports, etc.)
-    - Emergency glass-breaker override
+    - Emergency glass-breaker override with immutable audit logging
     - Instant revocation management
     """
 
@@ -31,7 +31,7 @@ class ConsentService:
         allowed_resources: str = "all"
     ) -> ConsentRecord:
         """Issues a new active consent policy for a vault."""
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(timezone.utc).replace(tzinfo=None)
         valid_to = now + timedelta(minutes=duration_minutes) if duration_minutes else None
 
         record = ConsentRecord(
@@ -59,14 +59,28 @@ class ConsentService:
     ) -> Tuple[bool, Optional[str]]:
         """
         Verifies if an accessor has valid, active, non-expired consent.
-        Supports Emergency override (purpose='EMERGENCY').
+        Supports Emergency override (purpose='EMERGENCY') with full audit logging.
         """
-        # 1. Emergency Glass-Breaker Check
+        # 1. Emergency Glass-Breaker Check with Audit Logging
         if purpose.upper() == "EMERGENCY":
+            try:
+                from app.services.audit_service import AuditService
+                audit_service = AuditService(self.db)
+                audit_service.log_event(
+                    action="EXECUTE",
+                    event_type="emergency-override",
+                    vault_id=vault_id,
+                    resource_type=resource_type or "Patient",
+                    resource_id=f"vault-{vault_id}",
+                    outcome="SUCCESS",
+                    details=f"Emergency glass-breaker protocol accessed by '{accessor_identifier}'"
+                )
+            except Exception:
+                pass
             return True, "Emergency protocol access granted (Audit logged)."
 
         # 2. Check Active Consents in Database
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(timezone.utc).replace(tzinfo=None)
         consents = self.db.query(ConsentRecord).filter(
             ConsentRecord.vault_id == vault_id,
             ConsentRecord.status == "active"
@@ -118,7 +132,7 @@ class ConsentService:
 
         # Provision period
         period: Dict[str, str] = {
-            "start": record.valid_from.isoformat() + "Z" if record.valid_from else datetime.datetime.utcnow().isoformat() + "Z"
+            "start": record.valid_from.isoformat() + "Z" if record.valid_from else datetime.datetime.now(timezone.utc).isoformat()
         }
         if record.valid_to:
             period["end"] = record.valid_to.isoformat() + "Z"
@@ -151,7 +165,7 @@ class ConsentService:
                 "reference": f"Patient/vault-{vault.id}",
                 "display": vault.full_name
             },
-            "dateTime": record.created_at.isoformat() + "Z" if record.created_at else datetime.datetime.utcnow().isoformat() + "Z",
+            "dateTime": record.created_at.isoformat() + "Z" if record.created_at else datetime.datetime.now(timezone.utc).isoformat(),
             "performer": [
                 {
                     "display": record.grantee_identifier

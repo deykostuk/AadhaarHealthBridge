@@ -148,20 +148,68 @@ class DocumentService:
         return document, None
 
     def delete_document(self, document_id: int, user_id: int) -> Tuple[bool, Optional[str]]:
-        """Deletes a document from cloud/local storage and database with access checks."""
-        document = self.db.query(Document).filter(Document.id == document_id).first()
-        if not document:
-            return False, "Document not found."
+        """Deletes a document from cloud/local storage, vector store, and database with access checks."""
+        try:
+            document = self.db.query(Document).filter(Document.id == document_id).first()
+            if not document:
+                return False, "Document not found."
 
-        access = self.db.query(VaultAccess).filter(
-            VaultAccess.user_id == user_id,
-            VaultAccess.vault_id == document.vault_id
-        ).first()
-        if not access:
-            return False, "Unauthorized access."
+            access = self.db.query(VaultAccess).filter(
+                VaultAccess.user_id == user_id,
+                VaultAccess.vault_id == document.vault_id
+            ).first()
+            if not access:
+                return False, "Unauthorized access."
 
-        delete_document_from_storage(document.file_path)
-        self.db.delete(document)
-        self.db.commit()
+            vault_id = document.vault_id
+            file_path = document.file_path
+            doc_name = document.file_name or "Document"
 
-        return True, None
+            # 1. Clean up from vector store
+            try:
+                from app.services.vector_store_service import VectorStoreFactory
+                store = VectorStoreFactory.get_vector_store(self.db)
+                store.delete_document(vault_id=vault_id, document_id=document_id)
+            except Exception as e:
+                logger.warning(f"Failed to delete vector embeddings for document {document_id}: {e}")
+
+            # 2. Clean up associated health metrics extracted from this document
+            try:
+                self.db.query(HealthMetric).filter(HealthMetric.source_document_id == document_id).delete()
+            except Exception as e:
+                logger.warning(f"Failed to delete health metrics for document {document_id}: {e}")
+
+            # 3. Clean up database embeddings if using pgvector/DocumentEmbedding
+            try:
+                from app.models.patient import DocumentEmbedding
+                self.db.query(DocumentEmbedding).filter(DocumentEmbedding.document_id == document_id).delete()
+            except Exception as e:
+                logger.warning(f"Failed to delete DocumentEmbedding records for document {document_id}: {e}")
+
+            # 4. Record Audit Log for Document Deletion
+            try:
+                from app.services.audit_service import AuditService
+                audit_service = AuditService(self.db)
+                audit_service.log_event(
+                    action="DELETE",
+                    event_type="document-delete",
+                    vault_id=vault_id,
+                    user_id=user_id,
+                    resource_type="Document",
+                    resource_id=str(document_id),
+                    outcome="SUCCESS",
+                    details=f"Deleted document {doc_name}"
+                )
+            except Exception:
+                logger.exception("Failed to record document delete audit event")
+
+            # 5. Delete physical file from storage and database record
+            delete_document_from_storage(file_path)
+            self.db.delete(document)
+            self.db.commit()
+
+            return True, None
+        except Exception as e:
+            self.db.rollback()
+            logger.exception(f"Error during document deletion {document_id}: {e}")
+            return False, f"Failed to delete document: {str(e)}"

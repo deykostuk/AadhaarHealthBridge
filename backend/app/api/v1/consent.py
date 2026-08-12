@@ -11,12 +11,21 @@ from app.middleware.auth import get_current_user
 
 router = APIRouter(prefix="/vaults/{vault_id}/consents", tags=["Consent Management"])
 
-class CreateConsentRequest(BaseModel):
+from app.schemas.patient import StrictInputModel
+from app.utils.sanitizer import InputSanitizer
+from pydantic import field_validator
+
+class CreateConsentRequest(StrictInputModel):
     grantee_identifier: str
     consent_type: str = "patient-privacy"
     purpose: str = "TREAT"
     duration_minutes: Optional[int] = None
     allowed_resources: str = "all"
+
+    @field_validator("grantee_identifier", "consent_type", "purpose", "allowed_resources", mode="before")
+    @classmethod
+    def sanitize_consent_inputs(cls, v):
+        return InputSanitizer.sanitize_text(v, max_length=150)
 
 @router.post("")
 async def create_vault_consent(

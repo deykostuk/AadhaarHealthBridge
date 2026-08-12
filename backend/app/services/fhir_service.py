@@ -1,4 +1,5 @@
 import datetime
+from datetime import timezone
 from typing import Dict, Any, List, Optional
 from app.models.patient import VaultProfile, HealthMetric, Document, QRScanLog
 from config import settings
@@ -202,7 +203,7 @@ class FHIRService:
                 "reference": f"Patient/vault-{vault.id}",
                 "display": vault.full_name
             },
-            "effectiveDateTime": metric.observed_date.isoformat() if metric.observed_date else datetime.datetime.utcnow().isoformat(),
+            "effectiveDateTime": metric.observed_date.isoformat() if metric.observed_date else datetime.datetime.now(timezone.utc).isoformat(),
             **value_field
         }
 
@@ -260,8 +261,8 @@ class FHIRService:
                 "reference": f"Patient/vault-{vault.id}",
                 "display": vault.full_name
             },
-            "effectiveDateTime": doc.upload_date.isoformat() if hasattr(doc, "upload_date") and doc.upload_date else datetime.datetime.utcnow().isoformat(),
-            "issued": datetime.datetime.utcnow().isoformat() + "Z",
+            "effectiveDateTime": doc.upload_date.isoformat() if hasattr(doc, "upload_date") and doc.upload_date else datetime.datetime.now(timezone.utc).isoformat(),
+            "issued": datetime.datetime.now(timezone.utc).isoformat(),
             "result": results,
             "presentedForm": [
                 {
@@ -293,7 +294,7 @@ class FHIRService:
                     "reference": f"Patient/vault-{vault.id}",
                     "display": vault.full_name
                 },
-                "authoredOn": datetime.datetime.utcnow().date().isoformat(),
+                "authoredOn": datetime.datetime.now(timezone.utc).date().isoformat(),
                 "dosageInstruction": [
                     {
                         "text": f"Take {item} as prescribed by physician."
@@ -324,7 +325,7 @@ class FHIRService:
                     "display": vault.full_name
                 },
                 "period": {
-                    "start": log.timestamp.isoformat() if log.timestamp else datetime.datetime.utcnow().isoformat()
+                    "start": log.timestamp.isoformat() if log.timestamp else datetime.datetime.now(timezone.utc).isoformat()
                 },
                 "reasonCode": [
                     {
@@ -369,7 +370,7 @@ class FHIRService:
                 "reference": f"Patient/vault-{vault.id}",
                 "display": vault.full_name
             },
-            "date": doc.upload_date.isoformat() if hasattr(doc, "upload_date") and doc.upload_date else datetime.datetime.utcnow().isoformat(),
+            "date": doc.upload_date.isoformat() if hasattr(doc, "upload_date") and doc.upload_date else datetime.datetime.now(timezone.utc).isoformat(),
             "description": doc.file_name or "Medical Report",
             "content": [
                 {
@@ -552,7 +553,7 @@ class FHIRService:
             "resourceType": "Bundle",
             "id": f"bundle-vault-{vault.id}",
             "type": "collection",
-            "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.datetime.now(timezone.utc).isoformat(),
             "total": len(entries),
             "entry": entries
         }

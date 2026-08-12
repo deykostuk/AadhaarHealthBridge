@@ -77,7 +77,7 @@ async def serve_document(
     disposition = "inline" if ext in [".pdf", ".png", ".jpg", ".jpeg", ".gif", ".txt"] else f"attachment; filename=\"{filename}\""
 
     headers = {
-        "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none';",
+        "Content-Security-Policy": "default-src 'none'; frame-ancestors 'self';",
         "Content-Disposition": disposition
     }
     return FileResponse(full_path, headers=headers)

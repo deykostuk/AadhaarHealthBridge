@@ -23,4 +23,10 @@ async def get_emergency_scan_data(
     if not vault:
         raise HTTPException(status_code=404, detail={"status": "error", "message": "Emergency profile not found."})
 
+    if not vault.is_emergency_ready:
+        raise HTTPException(
+            status_code=403,
+            detail={"status": "error", "message": "Emergency access is disabled for this medical profile."}
+        )
+
     return vault

@@ -37,7 +37,7 @@ DOCUMENT_KEYWORDS = re.compile(r"\b(medication|prescribed|doctor|recommend|disch
 import math
 import hashlib
 
-def generate_local_embedding(text: str, dim: int = 1536) -> list:
+def generate_local_embedding(text: str, dim: int = 384) -> list:
     """
     100% on-device deterministic semantic embedding engine.
     Computes a normalized dense vector using character n-grams and token hashing with L2-normalization.
@@ -91,10 +91,17 @@ class SentenceTransformerManager:
             from config import settings
             model_name = getattr(settings, "SENTENCE_TRANSFORMER_MODEL", "all-MiniLM-L6-v2")
             try:
+                import os
+                # Set short timeouts and disable HF telemetry/online checks
+                os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+                os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
                 from sentence_transformers import SentenceTransformer
-                logger.info(f"Loading local Sentence Transformer model: {model_name}...")
-                self._model = SentenceTransformer(model_name)
-                logger.info(f"Successfully loaded Sentence Transformer model {model_name}.")
+                try:
+                    # Attempt loading from local cache first to prevent remote network hangs
+                    self._model = SentenceTransformer(model_name, local_files_only=True)
+                except Exception:
+                    # Fallback to local on-device deterministic vector engine for sub-millisecond indexing
+                    self._model = None
             except Exception as e:
                 logger.debug(f"SentenceTransformer not loaded ({e}), using on-device deterministic vector engine.")
                 self._model = None

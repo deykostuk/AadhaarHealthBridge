@@ -5,9 +5,39 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.fhir_service import fhir_service
 from app.middleware.rbac import RequireVaultPermission, Permission
-from app.models.patient import VaultProfile, HealthMetric, Document, QRScanLog
+from app.middleware.auth import get_current_user_hybrid
+from app.models.patient import VaultProfile, HealthMetric, Document, QRScanLog, User
 
 router = APIRouter(tags=["HL7 FHIR R4 Healthcare Standard"])
+
+def _verify_patient_access(patient_id: int, current_user: User, db: Session) -> VaultProfile:
+    """Verifies that the current user has access to the requested patient vault."""
+    from app.middleware.rbac import Role, Permission, RESOURCE_PERMISSIONS
+    from app.models.patient import VaultAccess
+
+    if current_user.role == Role.ADMIN.value:
+        vault = db.query(VaultProfile).filter(VaultProfile.id == patient_id).first()
+        if not vault:
+            raise HTTPException(status_code=404, detail="Patient not found.")
+        return vault
+
+    access = db.query(VaultAccess).filter(
+        VaultAccess.user_id == current_user.id,
+        VaultAccess.vault_id == patient_id
+    ).first()
+
+    if not access:
+        raise HTTPException(status_code=403, detail="Unauthorized access to patient vault.")
+
+    allowed = RESOURCE_PERMISSIONS.get(access.access_type, set())
+    if Permission.VAULT_READ not in allowed:
+        raise HTTPException(status_code=403, detail="Forbidden: insufficient permission to read patient vault.")
+
+    vault = db.query(VaultProfile).filter(VaultProfile.id == patient_id).first()
+    if not vault:
+        raise HTTPException(status_code=404, detail="Patient not found.")
+    return vault
+
 
 @router.get("/fhir/Patient/{vault_id}")
 async def get_fhir_patient(
@@ -23,12 +53,11 @@ async def get_fhir_patient(
 async def get_fhir_observations(
     patient: int = Query(..., description="Vault ID of the patient"),
     code: Optional[str] = Query(None, description="Filter by LOINC code or metric name"),
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Search observations for a patient."""
-    vault = db.query(VaultProfile).filter(VaultProfile.id == patient).first()
-    if not vault:
-        raise HTTPException(status_code=404, detail="Patient not found.")
+    vault = _verify_patient_access(patient, current_user, db)
 
     query = db.query(HealthMetric).filter(HealthMetric.vault_id == patient)
     if code:
@@ -54,12 +83,11 @@ async def get_fhir_observations(
 @router.get("/fhir/DiagnosticReport")
 async def get_fhir_diagnostic_reports(
     patient: int = Query(..., description="Vault ID of the patient"),
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Search diagnostic laboratory and radiology reports for a patient."""
-    vault = db.query(VaultProfile).filter(VaultProfile.id == patient).first()
-    if not vault:
-        raise HTTPException(status_code=404, detail="Patient not found.")
+    vault = _verify_patient_access(patient, current_user, db)
 
     docs = db.query(Document).filter(Document.vault_id == patient).all()
     metrics = db.query(HealthMetric).filter(HealthMetric.vault_id == patient).all()
@@ -83,12 +111,11 @@ async def get_fhir_diagnostic_reports(
 @router.get("/fhir/MedicationRequest")
 async def get_fhir_medication_requests(
     patient: int = Query(..., description="Vault ID of the patient"),
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Search active medication prescriptions for a patient."""
-    vault = db.query(VaultProfile).filter(VaultProfile.id == patient).first()
-    if not vault:
-        raise HTTPException(status_code=404, detail="Patient not found.")
+    vault = _verify_patient_access(patient, current_user, db)
 
     meds = fhir_service.to_fhir_medication_requests(vault)
     entries = [
@@ -110,12 +137,11 @@ async def get_fhir_medication_requests(
 @router.get("/fhir/Encounter")
 async def get_fhir_encounters(
     patient: int = Query(..., description="Vault ID of the patient"),
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Search clinical encounters and emergency QR scans for a patient."""
-    vault = db.query(VaultProfile).filter(VaultProfile.id == patient).first()
-    if not vault:
-        raise HTTPException(status_code=404, detail="Patient not found.")
+    vault = _verify_patient_access(patient, current_user, db)
 
     logs = db.query(QRScanLog).filter(QRScanLog.vault_id == patient).order_by(QRScanLog.timestamp.desc()).all()
     encounters = fhir_service.to_fhir_encounters(logs, vault)
@@ -139,12 +165,11 @@ async def get_fhir_encounters(
 @router.get("/fhir/DocumentReference")
 async def get_fhir_document_references(
     patient: int = Query(..., description="Vault ID of the patient"),
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Search document references for a patient."""
-    vault = db.query(VaultProfile).filter(VaultProfile.id == patient).first()
-    if not vault:
-        raise HTTPException(status_code=404, detail="Patient not found.")
+    vault = _verify_patient_access(patient, current_user, db)
 
     docs = db.query(Document).filter(Document.vault_id == patient).all()
     entries = [
@@ -166,12 +191,11 @@ async def get_fhir_document_references(
 @router.get("/fhir/AllergyIntolerance")
 async def get_fhir_allergies(
     patient: int = Query(..., description="Vault ID of the patient"),
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Search allergies for a patient."""
-    vault = db.query(VaultProfile).filter(VaultProfile.id == patient).first()
-    if not vault:
-        raise HTTPException(status_code=404, detail="Patient not found.")
+    vault = _verify_patient_access(patient, current_user, db)
 
     allergies = fhir_service.to_fhir_allergies(vault)
     entries = [
@@ -193,12 +217,11 @@ async def get_fhir_allergies(
 @router.get("/fhir/Condition")
 async def get_fhir_conditions(
     patient: int = Query(..., description="Vault ID of the patient"),
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Search medical conditions for a patient."""
-    vault = db.query(VaultProfile).filter(VaultProfile.id == patient).first()
-    if not vault:
-        raise HTTPException(status_code=404, detail="Patient not found.")
+    vault = _verify_patient_access(patient, current_user, db)
 
     conditions = fhir_service.to_fhir_conditions(vault)
     entries = [
@@ -220,12 +243,11 @@ async def get_fhir_conditions(
 @router.get("/fhir/Consent")
 async def get_fhir_consents(
     patient: int = Query(..., description="Vault ID of the patient"),
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Search consent policies for a patient."""
-    vault = db.query(VaultProfile).filter(VaultProfile.id == patient).first()
-    if not vault:
-        raise HTTPException(status_code=404, detail="Patient not found.")
+    vault = _verify_patient_access(patient, current_user, db)
 
     from app.models.patient import ConsentRecord
     from app.services.consent_service import ConsentService
@@ -250,6 +272,7 @@ async def get_fhir_consents(
 @router.get("/fhir/Consent/{consent_id}")
 async def get_fhir_consent_by_id(
     consent_id: int,
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Retrieve a specific Consent resource by ID."""
@@ -259,7 +282,7 @@ async def get_fhir_consent_by_id(
     if not consent:
         raise HTTPException(status_code=404, detail="Consent resource not found.")
 
-    vault = db.query(VaultProfile).filter(VaultProfile.id == consent.vault_id).first()
+    vault = _verify_patient_access(consent.vault_id, current_user, db)
     return ConsentService.to_fhir_consent(consent, vault)
 
 
@@ -284,12 +307,11 @@ async def get_fhir_patient_everything(
 async def get_fhir_audit_events(
     patient: int = Query(..., description="Vault ID of the patient"),
     limit: int = Query(50, ge=1, le=200),
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Search AuditEvents for a patient vault."""
-    vault = db.query(VaultProfile).filter(VaultProfile.id == patient).first()
-    if not vault:
-        raise HTTPException(status_code=404, detail="Patient not found.")
+    vault = _verify_patient_access(patient, current_user, db)
 
     from app.services.audit_service import AuditService
     service = AuditService(db)
@@ -299,6 +321,7 @@ async def get_fhir_audit_events(
 @router.get("/fhir/AuditEvent/{event_id}")
 async def get_fhir_audit_event_by_id(
     event_id: int,
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Retrieve a specific AuditEvent resource by ID."""
@@ -308,7 +331,7 @@ async def get_fhir_audit_event_by_id(
     if not log:
         raise HTTPException(status_code=404, detail="AuditEvent resource not found.")
 
-    vault = db.query(VaultProfile).filter(VaultProfile.id == log.vault_id).first() if log.vault_id else None
+    vault = _verify_patient_access(log.vault_id, current_user, db) if log.vault_id else None
     return AuditService.to_fhir_audit_event(log, vault)
 
 
@@ -316,12 +339,11 @@ async def get_fhir_audit_event_by_id(
 async def get_fhir_provenance(
     patient: int = Query(..., description="Vault ID of the patient"),
     limit: int = Query(50, ge=1, le=200),
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Search Provenance lineage records for a patient vault."""
-    vault = db.query(VaultProfile).filter(VaultProfile.id == patient).first()
-    if not vault:
-        raise HTTPException(status_code=404, detail="Patient not found.")
+    vault = _verify_patient_access(patient, current_user, db)
 
     from app.services.provenance_service import ProvenanceService
     service = ProvenanceService(db)
@@ -331,6 +353,7 @@ async def get_fhir_provenance(
 @router.get("/fhir/Provenance/{provenance_id}")
 async def get_fhir_provenance_by_id(
     provenance_id: int,
+    current_user: User = Depends(get_current_user_hybrid),
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """HL7 FHIR R4: Retrieve a specific Provenance resource by ID."""
@@ -340,7 +363,7 @@ async def get_fhir_provenance_by_id(
     if not record:
         raise HTTPException(status_code=404, detail="Provenance resource not found.")
 
-    vault = db.query(VaultProfile).filter(VaultProfile.id == record.vault_id).first()
+    vault = _verify_patient_access(record.vault_id, current_user, db)
     return ProvenanceService.to_fhir_provenance(record, vault)
 
 

@@ -123,12 +123,13 @@ def test_rest_vaults_and_documents_crud(client, db):
     assert res.status_code == 200
     assert res.json()["full_name"] == "Mom Name"
 
-    # 4. Update vault via REST PUT
-    update_payload = {"full_name": "Updated Mom Name", "blood_group": "AB+"}
+    # 4. Update vault via REST PUT (enabling emergency access)
+    update_payload = {"full_name": "Updated Mom Name", "blood_group": "AB+", "is_emergency_ready": True}
     res = client.put(f"/api/v1/vaults/{vault_id}", json=update_payload, headers=headers)
     assert res.status_code == 200
     assert res.json()["full_name"] == "Updated Mom Name"
     assert res.json()["blood_group"] == "AB+"
+    assert res.json()["is_emergency_ready"] is True
 
     # 5. Upload document via REST POST
     files = {"file": ("report.pdf", BytesIO(b"fake lab pdf"), "application/pdf")}
@@ -153,10 +154,8 @@ def test_rest_vaults_and_documents_crud(client, db):
     # 7. AI Chat via REST POST
     chat_payload = {"query": "What is the diagnosis?", "context": "[report.pdf] Normal."}
     with patch.dict(os.environ, {"XAI_API_KEY": "", "GROQ_API_KEY": ""}):
-        with patch("requests.post") as mock_post:
-            mock_resp = MagicMock()
-            mock_resp.status_code = 200
-            mock_resp.json.return_value = {"response": "All parameters are normal."}
+        with patch("app.services.ollama_service.ollama_service.generate") as mock_post:
+            mock_resp = "All parameters are normal."
             mock_post.return_value = mock_resp
             res = client.post(f"/api/v1/vaults/{vault_id}/chat", json=chat_payload, headers=headers)
     assert res.status_code == 200
@@ -168,10 +167,19 @@ def test_rest_vaults_and_documents_crud(client, db):
     assert res.status_code == 200
     assert res.json()["status"] == "success"
 
-    # 9. Emergency QR scan data endpoint
+    # 9. Emergency QR scan data endpoint (Allowed when is_emergency_ready=True)
     res = client.get(f"/api/v1/scan/{vault_data['qr_token']}/data")
     assert res.status_code == 200
     assert res.json()["full_name"] == "Updated Mom Name"
+
+    # 10. Disable emergency ready and verify 403 Forbidden protection
+    res = client.put(f"/api/v1/vaults/{vault_id}", json={"is_emergency_ready": False}, headers=headers)
+    assert res.status_code == 200
+    assert res.json()["is_emergency_ready"] is False
+
+    scan_blocked_res = client.get(f"/api/v1/scan/{vault_data['qr_token']}/data")
+    assert scan_blocked_res.status_code == 403
+    assert "Emergency access is disabled" in scan_blocked_res.json()["detail"]["message"]
 
 
 # --- HTML & Form UI View Tests ---

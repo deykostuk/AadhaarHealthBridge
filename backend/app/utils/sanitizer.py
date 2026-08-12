@@ -36,8 +36,8 @@ class InputSanitizer:
         cleaned = re.sub(r"(?i)<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>", "", cleaned)
         cleaned = re.sub(r"(?i)javascript:", "", cleaned)
 
-        # 3. HTML-escape special characters (&, <, >, ", ')
-        cleaned = html.escape(cleaned, quote=True).strip()
+        # 3. Strip raw angle brackets when forming tags to prevent injected HTML elements while preserving normal text
+        cleaned = re.sub(r"<[^>]+>", "", cleaned).strip()
 
         # 4. Truncate if max_length is enforced
         if max_length and len(cleaned) > max_length:

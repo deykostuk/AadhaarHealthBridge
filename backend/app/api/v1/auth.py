@@ -10,6 +10,7 @@ from app.schemas.patient import (
     UserCreate,
     UserOut,
     LoginRequest,
+    ChangePasswordRequest,
     TokenResponse,
     OAuthTokenResponse,
     RefreshTokenRequest,
@@ -144,3 +145,24 @@ async def login(payload: LoginRequest, db: Session = Depends(get_db)):
 async def get_current_user_profile(current_user: User = Depends(get_current_user_hybrid)):
     """REST API: Get current authenticated user details."""
     return current_user
+
+
+@router.post("/change-password")
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user_hybrid),
+    db: Session = Depends(get_db)
+):
+    """REST API: Change password for currently authenticated user."""
+    from app.services.password_service import password_service
+
+    if not password_service.verify_password(payload.old_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"status": "error", "message": "Incorrect existing password."}
+        )
+
+    current_user.password_hash = password_service.hash_password(payload.new_password)
+    db.commit()
+
+    return {"status": "success", "message": "Password changed successfully."}

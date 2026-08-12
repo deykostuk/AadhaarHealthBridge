@@ -67,10 +67,19 @@ def test_consent_verification_and_expiry(db):
     denied, msg = service.verify_consent(vault.id, "unauthorized_doc", purpose="TREAT", resource_type="Observation")
     assert denied is False
 
-    # Emergency glass-breaker override always permitted
+    # Emergency glass-breaker override always permitted and creates immutable audit record
     emerg_allowed, emerg_msg = service.verify_consent(vault.id, "paramedic_108", purpose="EMERGENCY")
     assert emerg_allowed is True
     assert "Emergency protocol" in emerg_msg
+
+    from app.models.patient import AuditLog
+    audit_entry = db.query(AuditLog).filter(
+        AuditLog.vault_id == vault.id,
+        AuditLog.event_type == "emergency-override"
+    ).first()
+    assert audit_entry is not None
+    assert "paramedic_108" in audit_entry.details
+    assert audit_entry.outcome == "SUCCESS"
 
 
 def test_consent_revocation(db):

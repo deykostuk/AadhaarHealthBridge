@@ -1,6 +1,7 @@
 import os
 import hashlib
 import datetime
+from datetime import timezone
 from typing import Optional, Tuple, Dict, Any, List
 import jwt
 from sqlalchemy.orm import Session
@@ -74,7 +75,7 @@ class AuthService:
 
     def generate_access_token(self, user: User, scopes: str = "openid profile health_records") -> str:
         """Generates an RFC 7519 compliant OAuth 2.0 JWT Access Token."""
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(timezone.utc)
         payload = {
             "iss": self.issuer,
             "sub": str(user.id),
@@ -90,7 +91,7 @@ class AuthService:
 
     def generate_id_token(self, user: User, nonce: Optional[str] = None) -> str:
         """Generates an OpenID Connect (OIDC Core 1.0) ID Token containing user identity claims."""
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(timezone.utc)
         self_vault = self.db.query(VaultProfile).filter(
             VaultProfile.owner_user_id == user.id,
             VaultProfile.relation == "Self"
@@ -115,7 +116,7 @@ class AuthService:
 
     def generate_refresh_token(self, user: User) -> str:
         """Generates a long-lived signed Refresh Token."""
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(timezone.utc)
         payload = {
             "iss": self.issuer,
             "sub": str(user.id),
@@ -190,7 +191,7 @@ class AuthService:
         }
 
     def get_jwks(self) -> Dict[str, Any]:
-        """Public JWKS descriptor."""
+        """Public JWKS descriptor with RFC 7517 compliant metadata."""
         kid = hashlib.sha256(settings.JWT_SECRET.encode()).hexdigest()[:16]
         return {
             "keys": [
@@ -198,7 +199,8 @@ class AuthService:
                     "kty": "oct",
                     "alg": "HS256",
                     "use": "sig",
-                    "kid": kid
+                    "kid": kid,
+                    "key_ops": ["verify"]
                 }
             ]
         }

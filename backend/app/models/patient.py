@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
@@ -8,6 +8,10 @@ from app.database import Base
 from config import settings
 
 from app.services.kms_service import kms_service
+
+def utc_now() -> datetime:
+    """Returns current naive datetime in UTC for database column defaults."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 class EncryptedText(TypeDecorator):
     """
@@ -40,7 +44,7 @@ class User(Base):
     username = Column(String(80), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(30), default="family_member")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     owned_vaults = relationship("VaultProfile", back_populates="owner", cascade="all, delete-orphan")
     vault_access = relationship("VaultAccess", back_populates="user", cascade="all, delete-orphan")
@@ -70,7 +74,7 @@ class VaultProfile(Base):
     address = Column(Text)
     qr_token = Column(String(120), unique=True, default=lambda: str(uuid.uuid4()))
     is_emergency_ready = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     health_snapshot = Column(Text, nullable=True)
 
     owner = relationship("User", back_populates="owned_vaults")
@@ -89,7 +93,7 @@ class VaultAccess(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     vault_id = Column(Integer, ForeignKey("vault_profiles.id", ondelete="CASCADE"), nullable=False)
     access_type = Column(String(30), default="caregiver")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="vault_access")
     vault_profile = relationship("VaultProfile", back_populates="access_users")
@@ -103,7 +107,7 @@ class Document(Base):
     category = Column(String(100))
     ocr_text = Column(Text, nullable=True)
     uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
-    upload_date = Column(DateTime, default=datetime.utcnow)
+    upload_date = Column(DateTime, default=utc_now)
     is_encrypted = Column(Boolean, default=False, nullable=True)
     ai_summary = Column(Text, nullable=True)
 
@@ -126,7 +130,7 @@ class QRScanLog(Base):
     __tablename__ = 'qr_scan_logs'
     id = Column(Integer, primary_key=True, index=True)
     vault_id = Column(Integer, ForeignKey('vault_profiles.id', name='fk_qrscanlog_vault_id', ondelete="CASCADE"))
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=utc_now)
     ip_address = Column(String(45))
     user_agent = Column(String(255))
     location_data = Column(String(255))
@@ -142,10 +146,10 @@ class ConsentRecord(Base):
     consent_type = Column(String(50), default="patient-privacy")
     purpose = Column(String(50), default="TREAT")
     status = Column(String(50), default="active")
-    valid_from = Column(DateTime, default=datetime.utcnow)
+    valid_from = Column(DateTime, default=utc_now)
     valid_to = Column(DateTime, nullable=True)
     allowed_resources = Column(String(255), default="all")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     vault = relationship("VaultProfile", back_populates="consents")
     granter = relationship("User")
@@ -163,7 +167,7 @@ class AuditLog(Base):
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(String(255), nullable=True)
     details = Column(Text, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=utc_now)
 
     vault = relationship("VaultProfile", back_populates="audit_logs")
     user = relationship("User")
@@ -179,7 +183,7 @@ class ProvenanceRecord(Base):
     agent_name = Column(String(120), nullable=False)
     source_reference = Column(String(120), nullable=True)
     integrity_hash = Column(String(64), nullable=True)  # SHA-256
-    recorded_at = Column(DateTime, default=datetime.utcnow)
+    recorded_at = Column(DateTime, default=utc_now)
 
     vault = relationship("VaultProfile", back_populates="provenance_records")
 
@@ -192,7 +196,7 @@ class DocumentEmbedding(Base):
     chunk_text = Column(Text, nullable=False)
     file_name = Column(String(255), nullable=True)
     embedding_json = Column(Text, nullable=False)  # Stores 384-dim normalized vector as JSON
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     vault = relationship("VaultProfile", back_populates="embeddings")
     document = relationship("Document", back_populates="embeddings")

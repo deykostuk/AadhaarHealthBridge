@@ -1,5 +1,6 @@
 import hashlib
 import datetime
+from datetime import timezone
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 
@@ -45,7 +46,7 @@ class ProvenanceService:
             agent_name=agent_name,
             source_reference=source_reference,
             integrity_hash=sha256_hash,
-            recorded_at=datetime.datetime.utcnow()
+            recorded_at=datetime.datetime.now(timezone.utc).replace(tzinfo=None)
         )
         self.db.add(record)
         self.db.commit()
@@ -103,7 +104,7 @@ class ProvenanceService:
                         "display": "Verification Signature / SHA-256 Digest"
                     }
                 ],
-                "when": record.recorded_at.isoformat() + "Z" if record.recorded_at else datetime.datetime.utcnow().isoformat() + "Z",
+                "when": record.recorded_at.isoformat() + "Z" if record.recorded_at else datetime.datetime.now(timezone.utc).isoformat(),
                 "who": {
                     "display": record.agent_name
                 },
@@ -118,7 +119,7 @@ class ProvenanceService:
                     "reference": target_ref
                 }
             ],
-            "recorded": record.recorded_at.isoformat() + "Z" if record.recorded_at else datetime.datetime.utcnow().isoformat() + "Z",
+            "recorded": record.recorded_at.isoformat() + "Z" if record.recorded_at else datetime.datetime.now(timezone.utc).isoformat(),
             "activity": {
                 "coding": [
                     {

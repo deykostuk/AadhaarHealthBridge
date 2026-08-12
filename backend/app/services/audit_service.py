@@ -1,4 +1,5 @@
 import datetime
+from datetime import timezone
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 
@@ -42,7 +43,7 @@ class AuditService:
             ip_address=ip_address or "127.0.0.1",
             user_agent=user_agent or "AadhaarHealthBridge/1.0",
             details=details,
-            timestamp=datetime.datetime.utcnow()
+            timestamp=datetime.datetime.now(timezone.utc).replace(tzinfo=None)
         )
         self.db.add(log)
         self.db.commit()
@@ -136,7 +137,7 @@ class AuditService:
                 }
             ],
             "action": action_code,
-            "recorded": log.timestamp.isoformat() + "Z" if log.timestamp else datetime.datetime.utcnow().isoformat() + "Z",
+            "recorded": log.timestamp.isoformat() + "Z" if log.timestamp else datetime.datetime.now(timezone.utc).isoformat(),
             "outcome": outcome_code,
             "outcomeDesc": log.details or f"{log.action} on {log.resource_type} ({log.outcome})",
             "agent": [

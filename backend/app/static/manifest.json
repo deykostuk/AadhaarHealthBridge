@@ -1,12 +1,14 @@
 {
-  "name": "Aadhaar Health Bridge - Digital Patient Vault",
+  "name": "Aadhaar Health Bridge - Universal Digital Patient Vault",
   "short_name": "HealthBridge",
   "description": "Universal FHIR-compliant offline-first digital healthcare vault and AI clinical assistant",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#0f172a",
-  "theme_color": "#0f766e",
+  "theme_color": "#0d9488",
+  "scope": "/",
   "icons": [
     {
       "src": "/static/icon-192.png",
@@ -21,5 +23,21 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["medical", "health", "productivity"]
+  "shortcuts": [
+    {
+      "name": "Emergency Medical Card",
+      "short_name": "Emergency",
+      "description": "Instant access to offline emergency medical card and blood group",
+      "url": "/static/offline_emergency.html",
+      "icons": [{ "src": "/static/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Clinical AI Assistant",
+      "short_name": "AI Assistant",
+      "description": "Ask privacy-first AI assistant about medical records",
+      "url": "/#tab-chat",
+      "icons": [{ "src": "/static/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["medical", "health", "productivity", "utilities"]
 }

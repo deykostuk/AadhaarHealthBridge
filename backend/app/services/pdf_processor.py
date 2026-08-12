@@ -149,7 +149,7 @@ class LocalPDFProcessor:
                         return datetime.datetime.strptime(date_str, fmt)
                     except ValueError:
                         continue
-        return datetime.datetime.utcnow()
+        return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
     @classmethod
     def extract_clinical_biomarkers(cls, text: str) -> List[Dict[str, Any]]:
