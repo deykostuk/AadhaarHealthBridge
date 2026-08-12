@@ -71,8 +71,82 @@ def render_template(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Ensure database tables are created
-    from app.models.patient import User, VaultProfile, VaultAccess, Document, HealthMetric, QRScanLog
+    from app.models.patient import User, VaultProfile, VaultAccess, Document, HealthMetric, QRScanLog, SOSAlertLog
     Base.metadata.create_all(bind=engine)
+
+    # Auto-seed default Demo User if not present
+    from app.database import SessionLocal
+    from app.services.password_service import password_service
+    from datetime import datetime, timezone
+    db = SessionLocal()
+    try:
+        demo_user = db.query(User).filter(User.username == "kostuk").first()
+        if not demo_user:
+            demo_user = User(
+                username="kostuk",
+                password_hash=password_service.hash_password("Demo1234!"),
+                role="family_member"
+            )
+            db.add(demo_user)
+            db.flush()
+
+            demo_vault = VaultProfile(
+                owner_user_id=demo_user.id,
+                relation="Self",
+                full_name="Kostuk Dey",
+                blood_group="O+",
+                allergies="Penicillin, Sulfa drugs",
+                medical_conditions="Mild Asthma",
+                medications="Albuterol inhaler PRN",
+                personal_contact="+919876543210",
+                emergency_1_name="Pooja Dey",
+                emergency_1_relation="Spouse",
+                emergency_1_phone="+919876543211",
+                emergency_2_name="Amit Dey",
+                emergency_2_relation="Brother",
+                emergency_2_phone="+919876543212",
+                address="Cyber City, Gurugram, Haryana - 122002",
+                is_emergency_ready=True
+            )
+            db.add(demo_vault)
+            db.flush()
+
+            access = VaultAccess(
+                user_id=demo_user.id,
+                vault_id=demo_vault.id,
+                access_type="owner"
+            )
+            db.add(access)
+
+            # Sample clinical biomarkers
+            m1 = HealthMetric(
+                vault_id=demo_vault.id,
+                metric_name="creatinine",
+                metric_value="0.95",
+                metric_unit="mg/dL",
+                observed_date=datetime.now(timezone.utc)
+            )
+            m2 = HealthMetric(
+                vault_id=demo_vault.id,
+                metric_name="glucose",
+                metric_value="92",
+                metric_unit="mg/dL",
+                observed_date=datetime.now(timezone.utc)
+            )
+            m3 = HealthMetric(
+                vault_id=demo_vault.id,
+                metric_name="hemoglobin",
+                metric_value="14.8",
+                metric_unit="g/dL",
+                observed_date=datetime.now(timezone.utc)
+            )
+            db.add_all([m1, m2, m3])
+            db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
     yield
 
 
@@ -307,6 +381,24 @@ def create_app() -> FastAPI:
         icon_path = os.path.join(STATIC_DIR, "icon-192.png")
         if os.path.exists(icon_path):
             return FileResponse(icon_path)
+        return Response(status_code=404)
+
+    # 4. Fallback Static File Server for PWA Root Assets
+    @app.get("/{file_name:path}", include_in_schema=False)
+    async def serve_root_static(file_name: str):
+        # Prevent path traversal
+        safe_path = os.path.abspath(os.path.join(STATIC_DIR, file_name))
+        if safe_path.startswith(os.path.abspath(STATIC_DIR)) and os.path.isfile(safe_path):
+            media_type = None
+            if safe_path.endswith(".js"):
+                media_type = "application/javascript"
+            elif safe_path.endswith(".css"):
+                media_type = "text/css"
+            elif safe_path.endswith(".json"):
+                media_type = "application/json"
+            elif safe_path.endswith(".html"):
+                media_type = "text/html"
+            return FileResponse(safe_path, media_type=media_type)
         return Response(status_code=404)
 
     return app
