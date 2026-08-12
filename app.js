@@ -149,10 +149,13 @@ class HealthBridgePWA {
     this.vaults = [];
     this.activeVaultId = null;
     this.activeVault = null;
-    this.allMetrics = [];
-    this.deferredInstallPrompt = null;
     this.localDB = new LocalVaultDB();
     this.cachedDocIds = new Set();
+    this.qrMode = 'crypto';
+    this.cameraFacing = 'environment';
+    this.cameraStream = null;
+    this.isScanning = false;
+    this.signedQrPayload = null;
 
     this.init();
   }
@@ -627,23 +630,70 @@ class HealthBridgePWA {
     }
 
     // Render QR Code for Emergency Access
-    const qrContainer = document.getElementById('emergency-qr-code');
-    if (qrContainer && window.QRCode) {
-      qrContainer.innerHTML = '';
-      const token = vault.qr_token || vault.id;
-      const emergencyUrl = `${window.location.origin}/static/offline_emergency.html?token=${token}`;
-      new QRCode(qrContainer, {
-        text: emergencyUrl,
-        width: 170,
-        height: 170,
-        colorDark: '#0f766e',
-        colorLight: '#ffffff'
-      });
+    this.renderEmergencyQRCode(vault);
+  }
 
-      const offlineCardLink = document.getElementById('offline-card-link');
-      if (offlineCardLink) {
-        offlineCardLink.href = emergencyUrl;
+  async switchQrMode(mode) {
+    this.qrMode = mode;
+    const cryptoBtn = document.getElementById('qr-mode-crypto-btn');
+    const urlBtn = document.getElementById('qr-mode-url-btn');
+    const sealBadge = document.getElementById('qr-crypto-seal-badge');
+
+    if (cryptoBtn && urlBtn) {
+      if (mode === 'crypto') {
+        cryptoBtn.className = 'btn btn-sm btn-primary';
+        urlBtn.className = 'btn btn-sm';
+        if (sealBadge) sealBadge.style.display = 'block';
+      } else {
+        cryptoBtn.className = 'btn btn-sm';
+        urlBtn.className = 'btn btn-sm btn-primary';
+        if (sealBadge) sealBadge.style.display = 'none';
       }
+    }
+
+    if (this.activeVault) {
+      await this.renderEmergencyQRCode(this.activeVault);
+    }
+  }
+
+  async renderEmergencyQRCode(vault) {
+    const qrContainer = document.getElementById('emergency-qr-code');
+    if (!qrContainer || !window.QRCode) return;
+    qrContainer.innerHTML = '';
+
+    const token = vault.qr_token || vault.id;
+    const emergencyUrl = `${window.location.origin}/static/offline_emergency.html?token=${token}`;
+
+    let qrText = emergencyUrl;
+
+    if (this.qrMode === 'crypto') {
+      try {
+        if (!this.signedQrPayload || this.signedQrVaultId !== vault.id) {
+          const res = await this.apiRequest(`/vaults/${vault.id}/crypto-qr`);
+          this.signedQrPayload = res.signed_qr_payload;
+          this.signedQrVaultId = vault.id;
+        }
+        if (this.signedQrPayload) {
+          qrText = this.signedQrPayload;
+        }
+      } catch (err) {
+        console.warn('Could not fetch signed offline QR payload, falling back to emergency URL:', err);
+        qrText = emergencyUrl;
+      }
+    }
+
+    new QRCode(qrContainer, {
+      text: qrText,
+      width: 170,
+      height: 170,
+      colorDark: this.qrMode === 'crypto' ? '#047857' : '#0f766e',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    const offlineCardLink = document.getElementById('offline-card-link');
+    if (offlineCardLink) {
+      offlineCardLink.href = emergencyUrl;
     }
   }
 
@@ -1493,6 +1543,217 @@ class HealthBridgePWA {
     } catch (err) {
       this.showToast(`Emergency SOS broadcast error: ${err.message}`, 'error');
     }
+  }
+
+  // 23. Live WebRTC Camera QR Scanner & Offline Triage System
+  async openCameraScanner() {
+    const modal = document.getElementById('camera-scanner-modal');
+    if (modal) modal.style.display = 'flex';
+    const statusEl = document.getElementById('scanner-status');
+    if (statusEl) {
+      statusEl.textContent = '⚡ Initializing camera stream...';
+      statusEl.style.color = '#34d399';
+    }
+    await this.startCameraStream();
+  }
+
+  closeCameraScanner() {
+    this.stopCameraStream();
+    const modal = document.getElementById('camera-scanner-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async flipCamera() {
+    this.cameraFacing = (this.cameraFacing === 'environment') ? 'user' : 'environment';
+    this.stopCameraStream();
+    await this.startCameraStream();
+  }
+
+  async startCameraStream() {
+    const video = document.getElementById('camera-stream');
+    const statusEl = document.getElementById('scanner-status');
+    if (!video) return;
+
+    try {
+      if (this.cameraStream) {
+        this.cameraStream.getTracks().forEach(t => t.stop());
+      }
+
+      this.cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: this.cameraFacing },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+
+      video.srcObject = this.cameraStream;
+      await video.play();
+
+      this.isScanning = true;
+      if (statusEl) {
+        statusEl.textContent = '🟢 Camera live. Position QR pass in frame...';
+      }
+      this.scanCameraLoop();
+    } catch (err) {
+      console.warn('Camera access denied or unavailable:', err);
+      if (statusEl) {
+        statusEl.textContent = '⚠️ Camera unavailable. Use "Scan Image / Photo" below.';
+        statusEl.style.color = '#fb7185';
+      }
+      this.showToast('Could not access camera. Please check permissions or upload a photo.', 'error');
+    }
+  }
+
+  stopCameraStream() {
+    this.isScanning = false;
+    if (this.cameraStream) {
+      this.cameraStream.getTracks().forEach(t => t.stop());
+      this.cameraStream = null;
+    }
+    const video = document.getElementById('camera-stream');
+    if (video) video.srcObject = null;
+  }
+
+  async scanCameraLoop() {
+    if (!this.isScanning) return;
+    const video = document.getElementById('camera-stream');
+    const canvas = document.getElementById('camera-canvas');
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      requestAnimationFrame(() => this.scanCameraLoop());
+      return;
+    }
+
+    // Use native BarcodeDetector API if available (high-speed hardware decoding)
+    if ('BarcodeDetector' in window) {
+      try {
+        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        const barcodes = await detector.detect(video);
+        if (barcodes.length > 0) {
+          const rawVal = barcodes[0].rawValue;
+          this.closeCameraScanner();
+          await this.processScannedQrPayload(rawVal);
+          return;
+        }
+      } catch (e) {}
+    }
+
+    // Fallback Canvas Frame Capture
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    if (this.isScanning) {
+      setTimeout(() => requestAnimationFrame(() => this.scanCameraLoop()), 200);
+    }
+  }
+
+  async handleQrPhotoUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    this.showToast('Analyzing QR photo image...', 'info');
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+
+    img.onload = async () => {
+      if ('BarcodeDetector' in window) {
+        try {
+          const detector = new BarcodeDetector({ formats: ['qr_code'] });
+          const barcodes = await detector.detect(img);
+          if (barcodes.length > 0) {
+            this.closeCameraScanner();
+            await this.processScannedQrPayload(barcodes[0].rawValue);
+            return;
+          }
+        } catch (err) {
+          console.warn('BarcodeDetector photo scan error:', err);
+        }
+      }
+
+      this.showToast('Could not automatically detect QR in photo. Please ensure clear lighting.', 'error');
+    };
+  }
+
+  async processScannedQrPayload(rawText) {
+    if (!rawText) return;
+    const cleanText = rawText.trim();
+
+    // 1. Check for Offline Cryptographic Pass (AHB1.<payload>.<sig>)
+    if (cleanText.startsWith('AHB1.')) {
+      try {
+        this.showToast('🔐 Cryptographically verifying ECDSA-P256 offline seal...', 'info');
+        const verifier = window.cryptoQRVerifier || new CryptoQRVerifier();
+        const res = await verifier.verifySignedPayload(cleanText);
+
+        this.showToast('✅ Cryptographic Digital Signature Authenticated!', 'success');
+        this.renderEmergencyTriageModal(res.data);
+      } catch (err) {
+        console.error('Offline signature verification failed:', err);
+        this.showToast(`⚠️ Signature Verification FAILED: ${err.message}`, 'error');
+      }
+      return;
+    }
+
+    // 2. Check for Online Emergency Web URL
+    if (cleanText.includes('/offline_emergency.html') || cleanText.includes('/scan/')) {
+      window.open(cleanText, '_blank');
+      return;
+    }
+
+    // Generic QR Text display
+    alert(`Scanned Content:\n\n${cleanText}`);
+  }
+
+  renderEmergencyTriageModal(profile) {
+    const modal = document.getElementById('emergency-triage-modal');
+    if (!modal) return;
+
+    const nameEl = document.getElementById('triage-patient-name');
+    const bloodEl = document.getElementById('triage-blood-badge');
+    const algEl = document.getElementById('triage-allergies');
+    const condEl = document.getElementById('triage-conditions');
+    const medsEl = document.getElementById('triage-meds');
+    const contactsEl = document.getElementById('triage-contacts-list');
+
+    if (nameEl) nameEl.textContent = profile.name || 'Emergency Patient';
+    if (bloodEl) bloodEl.textContent = profile.bg || 'Unknown';
+    if (algEl) algEl.textContent = profile.alg || 'None recorded';
+    if (condEl) condEl.textContent = profile.cnd || 'None recorded';
+    if (medsEl) medsEl.textContent = profile.med || 'None recorded';
+
+    if (contactsEl) {
+      const contacts = [];
+      if (profile.c1_name || profile.c1_ph) {
+        contacts.push({ name: profile.c1_name, rel: profile.c1_rel || 'Primary Caregiver', phone: profile.c1_ph, isPrimary: true });
+      }
+      if (profile.c2_name || profile.c2_ph) {
+        contacts.push({ name: profile.c2_name, rel: profile.c2_rel || 'Secondary Caregiver', phone: profile.c2_ph, isPrimary: false });
+      }
+
+      if (contacts.length === 0) {
+        contactsEl.innerHTML = '<div class="text-muted" style="font-size: 0.85rem;">No emergency caregiver contacts provided in pass.</div>';
+      } else {
+        contactsEl.innerHTML = contacts.map(c => `
+          <div class="glass-card" style="padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;">
+            <div>
+              <div style="font-weight: 800; font-size: 0.92rem;">${c.name || 'Emergency Contact'} <span class="badge" style="font-size: 0.68rem;">${c.rel}</span></div>
+              <div style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted); margin-top: 0.15rem;">${c.phone || 'No phone'}</div>
+            </div>
+            ${c.phone ? `<a href="tel:${c.phone}" class="btn btn-sm ${c.isPrimary ? 'btn-danger' : 'btn-primary'}" style="font-weight: 800; font-size: 0.82rem; padding: 0.35rem 0.75rem;">📞 Call</a>` : ''}
+          </div>
+        `).join('');
+      }
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  closeEmergencyTriageModal() {
+    const modal = document.getElementById('emergency-triage-modal');
+    if (modal) modal.style.display = 'none';
   }
 }
 
