@@ -1,7 +1,6 @@
 import json
 import logging
 import sys
-import time
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
@@ -18,6 +17,14 @@ def get_correlation_id() -> Optional[str]:
 def set_correlation_id(correlation_id: str) -> None:
     """Sets the correlation ID for the current request context."""
     correlation_id_ctx.set(correlation_id)
+
+
+class CorrelationFilter(logging.Filter):
+    """Ensures every log record contains a 'correlation_id' attribute."""
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, "correlation_id") or not record.correlation_id:
+            record.correlation_id = get_correlation_id() or "system"
+        return True
 
 
 class JSONLogFormatter(logging.Formatter):
@@ -58,6 +65,8 @@ def setup_logging(level: str = "INFO", json_format: bool = False) -> None:
         root_logger.removeHandler(handler)
 
     stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.addFilter(CorrelationFilter())
+
     if json_format:
         stream_handler.setFormatter(JSONLogFormatter())
     else:

@@ -129,15 +129,41 @@ async def signup(payload: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=OAuthTokenResponse)
-async def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    """REST API: Authenticate user and issue OAuth 2.0 + OIDC Token bundle."""
+async def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    """REST API: Authenticate user and issue OAuth 2.0 + OIDC Token bundle with anti-brute-force lockout."""
+    from app.services.lockout_service import lockout_service
+    client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown").split(",")[0].strip()
+
+    # 1. Check account lockout state
+    is_locked, remaining = lockout_service.is_locked(payload.username, ip=client_ip)
+    if is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "status": "error",
+                "message": f"Account is temporarily locked due to excessive failed attempts. Please retry in {remaining} seconds."
+            }
+        )
+
     auth_service = AuthService(db)
     user, _ = auth_service.authenticate_user(payload.username, payload.password)
     if not user:
+        attempts, is_now_locked, lock_secs = lockout_service.record_failed_attempt(payload.username, ip=client_ip)
+        if is_now_locked:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "status": "error",
+                    "message": f"Account has been locked for {lock_secs // 60} minutes due to {attempts} consecutive failed attempts."
+                }
+            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"status": "error", "message": "Invalid username or password."}
         )
+
+    # 2. Reset lockout attempts upon successful authentication
+    lockout_service.reset_attempts(payload.username, ip=client_ip)
     return auth_service.issue_oauth_bundle(user)
 
 

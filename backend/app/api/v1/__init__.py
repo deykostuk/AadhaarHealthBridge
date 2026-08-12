@@ -11,6 +11,7 @@ from app.api.v1.consent import router as consent_router
 from app.api.v1.audit import router as audit_router
 from app.api.v1.provenance import router as provenance_router
 from app.api.v1.locales import router as locales_router
+from app.api.v1.compliance import router as compliance_router
 
 api_v1_router = APIRouter()
 
@@ -26,3 +27,5 @@ api_v1_router.include_router(consent_router)
 api_v1_router.include_router(audit_router)
 api_v1_router.include_router(provenance_router)
 api_v1_router.include_router(locales_router)
+api_v1_router.include_router(compliance_router)
+

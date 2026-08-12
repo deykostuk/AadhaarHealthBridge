@@ -24,9 +24,16 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 @pytest.fixture(scope='function', autouse=True)
 def reset_rate_limiter():
     from app.middleware.rate_limiter import limiter
+    from app.services.lockout_service import lockout_service
     limiter.storage.clear()
+    with lockout_service._lock:
+        lockout_service._failed_attempts.clear()
+        lockout_service._lockout_expiry.clear()
     yield
     limiter.storage.clear()
+    with lockout_service._lock:
+        lockout_service._failed_attempts.clear()
+        lockout_service._lockout_expiry.clear()
 
 @pytest.fixture(scope='function')
 def db():

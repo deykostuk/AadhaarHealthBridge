@@ -318,7 +318,7 @@
           "Authentication"
         ],
         "summary": "Login",
-        "description": "REST API: Authenticate user and issue OAuth 2.0 + OIDC Token bundle.",
+        "description": "REST API: Authenticate user and issue OAuth 2.0 + OIDC Token bundle with anti-brute-force lockout.",
         "operationId": "login_api_v1_auth_login_post",
         "requestBody": {
           "content": {
@@ -1157,7 +1157,7 @@
           "Health"
         ],
         "summary": "Health Check",
-        "description": "REST API: Service liveness and health probe.",
+        "description": "Service liveness and health probe.",
         "operationId": "health_check_api_v1_health_get",
         "responses": {
           "200": {
@@ -1173,13 +1173,53 @@
         }
       }
     },
+    "/api/v1/health/live": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Liveness Probe",
+        "description": "Kubernetes / Container Liveness Probe (checks if application event loop is responding).",
+        "operationId": "liveness_probe_api_v1_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health/ready": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Readiness Probe",
+        "description": "Kubernetes / Container Readiness Probe.\nChecks database connection, storage directory write permissions, and KMS service status.",
+        "operationId": "readiness_probe_api_v1_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/health/db": {
       "get": {
         "tags": [
           "Health"
         ],
         "summary": "Health Check Db",
-        "description": "REST API: Database connectivity probe.",
+        "description": "Database connectivity probe.",
         "operationId": "health_check_db_api_v1_health_db_get",
         "responses": {
           "200": {
@@ -1187,6 +1227,48 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health/metrics": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Get Metrics Snapshot",
+        "description": "Operational Telemetry & Performance Metrics (JSON snapshot).",
+        "operationId": "get_metrics_snapshot_api_v1_health_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health/prometheus": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Get Prometheus Metrics",
+        "description": "Prometheus Scrape Endpoint (OpenMetrics text exposition format).",
+        "operationId": "get_prometheus_metrics_api_v1_health_prometheus_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -2392,6 +2474,171 @@
               "type": "string",
               "title": "Lang"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/compliance/dpo": {
+      "get": {
+        "tags": [
+          "Compliance & DPDP Act 2023"
+        ],
+        "summary": "Get Dpo Contact",
+        "description": "DPDP Act 2023 Section 8(9) - Data Protection Officer & Grievance Redressal Mechanism.\nReturns official contact details for privacy inquiries, grievance reporting, and regulatory oversight.",
+        "operationId": "get_dpo_contact_api_v1_compliance_dpo_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/compliance/privacy-notice": {
+      "get": {
+        "tags": [
+          "Compliance & DPDP Act 2023"
+        ],
+        "summary": "Get Dpdp Privacy Notice",
+        "description": "DPDP Act 2023 Section 5 - Transparent Notice of Processing.\nMachine-readable privacy notice specifying categories, purpose, retention, and lawful basis.",
+        "operationId": "get_dpdp_privacy_notice_api_v1_compliance_privacy_notice_get",
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "en",
+              "title": "Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/compliance/export-data-bundle/{vault_id}": {
+      "post": {
+        "tags": [
+          "Compliance & DPDP Act 2023"
+        ],
+        "summary": "Export Patient Data Bundle",
+        "description": "DPDP Act 2023 Section 11 - Right of Data Portability.\nExports the patient's entire medical profile, FHIR R4 observations, and audit trails as a signed JSON bundle.",
+        "operationId": "export_patient_data_bundle_api_v1_compliance_export_data_bundle__vault_id__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/compliance/purge-vault/{vault_id}": {
+      "delete": {
+        "tags": [
+          "Compliance & DPDP Act 2023"
+        ],
+        "summary": "Purge Vault Right To Be Forgotten",
+        "description": "DPDP Act 2023 Section 12(3) & GDPR Article 17 - Right to Erasure (Right to be Forgotten).\nPermanently and irreversibly purges patient vault records, diagnostic files, vector embeddings, and metrics.\nReturns cryptographic Proof of Erasure certificate.",
+        "operationId": "purge_vault_right_to_be_forgotten_api_v1_compliance_purge_vault__vault_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          },
+          {
+            "name": "confirmation",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Must be 'PERMANENTLY_DELETE'",
+              "title": "Confirmation"
+            },
+            "description": "Must be 'PERMANENTLY_DELETE'"
           }
         ],
         "responses": {

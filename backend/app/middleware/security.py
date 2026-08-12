@@ -115,13 +115,15 @@ class OWASPSecurityHeadersMiddleware(BaseHTTPMiddleware):
             )
             response.headers["Content-Security-Policy"] = csp_policy
 
-        # 5. Referrer Policy & Permissions Policy
+        # 5. Referrer Policy, Permissions Policy & Cross-Origin Isolation
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(self), microphone=(), camera=()"
         response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
 
         # 6. Anti-Caching for Private API Responses (OWASP API3 / Sensitive PHI)
-        if request.url.path.startswith("/api/v1/auth") or request.url.path.startswith("/api/v1/vaults"):
+        if request.url.path.startswith("/api/v1/auth") or request.url.path.startswith("/api/v1/vaults") or request.url.path.startswith("/api/v1/compliance"):
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
             response.headers["Pragma"] = "no-cache"
 
