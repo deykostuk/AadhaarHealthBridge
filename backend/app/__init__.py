@@ -101,31 +101,47 @@ API_DESCRIPTION = """
 TAGS_METADATA = [
     {
         "name": "Authentication",
-        "description": "User registration, JWT token generation, and account profile endpoints.",
+        "description": "🔐 User registration, OAuth 2.0 & OIDC token issuance, and credential management.",
     },
     {
         "name": "Vaults",
-        "description": "Family medical locker management, member provisioning, and QR audit trails.",
+        "description": "📁 Multi-user family medical lockers, member provisioning, RBAC permissions, and emergency contacts.",
     },
     {
         "name": "Documents",
-        "description": "Medical record upload, OCR digital text extraction, streaming, and deletion.",
+        "description": "📄 Diagnostics PDF uploads, PyMuPDF digital text extraction, OCR indexing, and document streaming.",
     },
     {
         "name": "Health Metrics",
-        "description": "Structured biomarker time-series queries and JSON health snapshots.",
+        "description": "🩸 Structured clinical biomarkers (Creatinine, Urea, Uric Acid, Hb, Glucose, HbA1c) and historical time-series.",
     },
     {
         "name": "AI Clinical Assistant",
-        "description": "RAG-powered conversational medical assistant with biomarker trend interpretation.",
+        "description": "🤖 Privacy-first Local RAG Q&A with tiered AI models (Ollama, Groq, Grok) and clinical guardrails.",
     },
     {
         "name": "Emergency QR Scan",
-        "description": "Zero-authentication emergency data access endpoint for first responders.",
+        "description": "🚑 Zero-login paramedic glass-breaker access with Geo-IP audit logging and life-saving triage briefs.",
+    },
+    {
+        "name": "FHIR R4",
+        "description": "🏥 HL7 FHIR R4 interoperability standard bundles, Patient profiles, and Observation diagnostic resources.",
+    },
+    {
+        "name": "Consent Management",
+        "description": "📜 ABDM-compliant Consent Artifact lifecycle, electronic signatures, verification, and revocation.",
+    },
+    {
+        "name": "Audit & Provenance",
+        "description": "🛡️ Immutable HL7 FHIR AuditEvent trail and W3C PROV cryptographic integrity records.",
+    },
+    {
+        "name": "Localization",
+        "description": "🌐 6 Indian language i18n localization dictionary endpoints (EN, HI, BN, TE, TA, MR).",
     },
     {
         "name": "Health",
-        "description": "System liveness and database connectivity probes.",
+        "description": "🩺 System liveness, database connectivity, and readiness health probes.",
     },
 ]
 
@@ -140,14 +156,50 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
         swagger_ui_parameters={
-            "defaultModelsExpandDepth": 2,
+            "defaultModelsExpandDepth": 3,
             "displayRequestDuration": True,
             "docExpansion": "list",
             "filter": True,
-            "showExtensions": True
+            "showExtensions": True,
+            "persistAuthorization": True
         },
         lifespan=lifespan
     )
+
+    def custom_openapi():
+        if app.openapi_schema:
+            return app.openapi_schema
+        from fastapi.openapi.utils import get_openapi
+        schema = get_openapi(
+            title="Aadhaar Health Bridge API",
+            version="1.0.0",
+            description=API_DESCRIPTION,
+            routes=app.routes,
+            tags=TAGS_METADATA,
+            contact={
+                "name": "Aadhaar Health Bridge Developer Platform",
+                "email": "dev@aadhaarhealthbridge.in",
+                "url": "https://github.com/deykostuk/AadhaarHealthBridge"
+            },
+            license_info={
+                "name": "MIT License",
+                "url": "https://opensource.org/licenses/MIT"
+            }
+        )
+        if "components" not in schema:
+            schema["components"] = {}
+        schema["components"]["securitySchemes"] = {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Provide your JWT Bearer token issued by `/api/v1/auth/login`."
+            }
+        }
+        app.openapi_schema = schema
+        return app.openapi_schema
+
+    app.openapi = custom_openapi
 
     # Session Middleware (for cookie state and flash messages)
     app.add_middleware(

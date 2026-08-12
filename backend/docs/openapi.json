@@ -3,6 +3,15 @@
   "info": {
     "title": "Aadhaar Health Bridge API",
     "description": "\n# \ud83e\ude7a Aadhaar Health Bridge API\n\n**Aadhaar Health Bridge** provides high-performance, secure emergency medical records management, zero-authentication emergency QR profile access, automated biomarker extraction, and an AI Clinical Document Assistant.\n\n---\n\n## \ud83d\udd10 Authentication & Authorization\n* **Bearer Token**: Send `Authorization: Bearer <JWT_TOKEN>` header for API endpoints.\n* **Tokens**: Issued via `/api/v1/auth/login`.\n\n---\n\n## \u26a1 Core Modules & Features\n* **Authentication**: User registration, credential verification, and profile introspection.\n* **Vaults**: Comprehensive management of patient medical lockers and family caregiver access.\n* **Documents**: Secure upload of diagnostics reports with PyMuPDF digital text extraction and Chroma DB vector indexing.\n* **Health Metrics**: Structured clinical biomarker parsing (Creatinine, Urea, Uric Acid, Hemoglobin, Glucose, HbA1c).\n* **AI Clinical Assistant**: RAG question-answering with tiered cascading LLMs (Grok-beta, Groq Llama, Local Ollama, Offline RAG).\n* **Emergency QR Scan**: Zero-login immediate retrieval for paramedics and doctors with Geo-IP audit logging.\n",
+    "contact": {
+      "name": "Aadhaar Health Bridge Developer Platform",
+      "url": "https://github.com/deykostuk/AadhaarHealthBridge",
+      "email": "dev@aadhaarhealthbridge.in"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://opensource.org/licenses/MIT"
+    },
     "version": "1.0.0"
   },
   "paths": {
@@ -372,6 +381,51 @@
         ]
       }
     },
+    "/api/v1/auth/change-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Change Password",
+        "description": "REST API: Change password for currently authenticated user.",
+        "operationId": "change_password_api_v1_auth_change_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/vaults": {
       "get": {
         "tags": [
@@ -456,7 +510,7 @@
           "Vaults"
         ],
         "summary": "Get Vault",
-        "description": "REST API: Retrieve a specific vault profile.",
+        "description": "REST API: Retrieve a specific vault profile with resource-level authorization.",
         "operationId": "get_vault_api_v1_vaults__vault_id__get",
         "security": [
           {
@@ -502,7 +556,7 @@
           "Vaults"
         ],
         "summary": "Update Vault",
-        "description": "REST API: Update clinical variables and emergency contact details for a vault.",
+        "description": "REST API: Update clinical variables and emergency contacts with resource-level authorization.",
         "operationId": "update_vault_api_v1_vaults__vault_id__put",
         "security": [
           {
@@ -552,6 +606,50 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Vaults"
+        ],
+        "summary": "Delete Vault",
+        "description": "REST API: Delete medical vault profile with owner permissions.",
+        "operationId": "delete_vault_api_v1_vaults__vault_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/vaults/{vault_id}/scan-logs": {
@@ -560,7 +658,7 @@
           "Vaults"
         ],
         "summary": "Get Vault Scan Logs",
-        "description": "REST API: Retrieve the recent QR emergency scan audit logs for a vault.",
+        "description": "REST API: Retrieve QR emergency scan audit logs with resource-level authorization.",
         "operationId": "get_vault_scan_logs_api_v1_vaults__vault_id__scan_logs_get",
         "security": [
           {
@@ -622,7 +720,7 @@
           "Documents"
         ],
         "summary": "List Vault Documents",
-        "description": "REST API: List all medical documents uploaded to a vault.",
+        "description": "REST API: List medical documents with resource-level authorization.",
         "operationId": "list_vault_documents_api_v1_vaults__vault_id__documents_get",
         "security": [
           {
@@ -672,7 +770,7 @@
           "Documents"
         ],
         "summary": "Upload Document",
-        "description": "REST API: Upload, OCR process, and index a medical document.",
+        "description": "REST API: Upload and index a medical document with resource-level authorization.",
         "operationId": "upload_document_api_v1_vaults__vault_id__documents_post",
         "security": [
           {
@@ -730,7 +828,7 @@
           "Documents"
         ],
         "summary": "Serve Document",
-        "description": "REST API: Serve secure binary document stream with CSP headers.",
+        "description": "REST API: Stream medical document file with resource-level authorization and CSP protection.",
         "operationId": "serve_document_api_v1_vaults__vault_id__documents__document_id__serve_get",
         "security": [
           {
@@ -785,7 +883,7 @@
           "Documents"
         ],
         "summary": "Delete Document",
-        "description": "REST API: Delete medical document from storage and database.",
+        "description": "REST API: Delete medical document with resource-level authorization.",
         "operationId": "delete_document_api_v1_vaults__vault_id__documents__document_id__delete",
         "security": [
           {
@@ -842,7 +940,7 @@
           "Health Metrics"
         ],
         "summary": "Get Metrics",
-        "description": "REST API: Get time-series health metrics for a vault.",
+        "description": "REST API: Get time-series health metrics with resource-level authorization.",
         "operationId": "get_metrics_api_v1_vaults__vault_id__metrics_get",
         "security": [
           {
@@ -881,7 +979,13 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HealthMetricOut"
+                  },
+                  "title": "Response Get Metrics Api V1 Vaults  Vault Id  Metrics Get"
+                }
               }
             }
           },
@@ -904,7 +1008,7 @@
           "Health Metrics"
         ],
         "summary": "Get Snapshot",
-        "description": "REST API: Get latest biomarker vitals and JSON health snapshot.",
+        "description": "REST API: Get latest vitals and JSON health snapshot with resource-level authorization.",
         "operationId": "get_snapshot_api_v1_vaults__vault_id__snapshot_get",
         "security": [
           {
@@ -952,7 +1056,7 @@
           "AI Clinical Assistant"
         ],
         "summary": "Query Clinical Assistant",
-        "description": "REST API: Ask questions about medical records, prescriptions, and biomarker trends.",
+        "description": "REST API: Ask questions about medical records with resource-level authorization.",
         "operationId": "query_clinical_assistant_api_v1_vaults__vault_id__chat_post",
         "security": [
           {
@@ -1083,6 +1187,1229 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/Patient/{vault_id}": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Patient",
+        "description": "HL7 FHIR R4: Retrieve Patient resource by Vault ID.",
+        "operationId": "get_fhir_patient_api_v1_fhir_Patient__vault_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Patient Api V1 Fhir Patient  Vault Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/Observation": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Observations",
+        "description": "HL7 FHIR R4: Search observations for a patient.",
+        "operationId": "get_fhir_observations_api_v1_fhir_Observation_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Vault ID of the patient",
+              "title": "Patient"
+            },
+            "description": "Vault ID of the patient"
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by LOINC code or metric name",
+              "title": "Code"
+            },
+            "description": "Filter by LOINC code or metric name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Observations Api V1 Fhir Observation Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/DiagnosticReport": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Diagnostic Reports",
+        "description": "HL7 FHIR R4: Search diagnostic laboratory and radiology reports for a patient.",
+        "operationId": "get_fhir_diagnostic_reports_api_v1_fhir_DiagnosticReport_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Vault ID of the patient",
+              "title": "Patient"
+            },
+            "description": "Vault ID of the patient"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Diagnostic Reports Api V1 Fhir Diagnosticreport Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/MedicationRequest": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Medication Requests",
+        "description": "HL7 FHIR R4: Search active medication prescriptions for a patient.",
+        "operationId": "get_fhir_medication_requests_api_v1_fhir_MedicationRequest_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Vault ID of the patient",
+              "title": "Patient"
+            },
+            "description": "Vault ID of the patient"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Medication Requests Api V1 Fhir Medicationrequest Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/Encounter": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Encounters",
+        "description": "HL7 FHIR R4: Search clinical encounters and emergency QR scans for a patient.",
+        "operationId": "get_fhir_encounters_api_v1_fhir_Encounter_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Vault ID of the patient",
+              "title": "Patient"
+            },
+            "description": "Vault ID of the patient"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Encounters Api V1 Fhir Encounter Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/DocumentReference": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Document References",
+        "description": "HL7 FHIR R4: Search document references for a patient.",
+        "operationId": "get_fhir_document_references_api_v1_fhir_DocumentReference_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Vault ID of the patient",
+              "title": "Patient"
+            },
+            "description": "Vault ID of the patient"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Document References Api V1 Fhir Documentreference Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/AllergyIntolerance": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Allergies",
+        "description": "HL7 FHIR R4: Search allergies for a patient.",
+        "operationId": "get_fhir_allergies_api_v1_fhir_AllergyIntolerance_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Vault ID of the patient",
+              "title": "Patient"
+            },
+            "description": "Vault ID of the patient"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Allergies Api V1 Fhir Allergyintolerance Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/Condition": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Conditions",
+        "description": "HL7 FHIR R4: Search medical conditions for a patient.",
+        "operationId": "get_fhir_conditions_api_v1_fhir_Condition_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Vault ID of the patient",
+              "title": "Patient"
+            },
+            "description": "Vault ID of the patient"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Conditions Api V1 Fhir Condition Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/Consent": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Consents",
+        "description": "HL7 FHIR R4: Search consent policies for a patient.",
+        "operationId": "get_fhir_consents_api_v1_fhir_Consent_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Vault ID of the patient",
+              "title": "Patient"
+            },
+            "description": "Vault ID of the patient"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Consents Api V1 Fhir Consent Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/Consent/{consent_id}": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Consent By Id",
+        "description": "HL7 FHIR R4: Retrieve a specific Consent resource by ID.",
+        "operationId": "get_fhir_consent_by_id_api_v1_fhir_Consent__consent_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "consent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Consent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Consent By Id Api V1 Fhir Consent  Consent Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/Patient/{vault_id}/$everything": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Patient Everything",
+        "description": "HL7 FHIR R4: Patient $everything operation returning complete patient collection bundle.",
+        "operationId": "get_fhir_patient_everything_api_v1_fhir_Patient__vault_id___everything_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Patient Everything Api V1 Fhir Patient  Vault Id   Everything Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/AuditEvent": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Audit Events",
+        "description": "HL7 FHIR R4: Search AuditEvents for a patient vault.",
+        "operationId": "get_fhir_audit_events_api_v1_fhir_AuditEvent_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Vault ID of the patient",
+              "title": "Patient"
+            },
+            "description": "Vault ID of the patient"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Audit Events Api V1 Fhir Auditevent Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/AuditEvent/{event_id}": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Audit Event By Id",
+        "description": "HL7 FHIR R4: Retrieve a specific AuditEvent resource by ID.",
+        "operationId": "get_fhir_audit_event_by_id_api_v1_fhir_AuditEvent__event_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Audit Event By Id Api V1 Fhir Auditevent  Event Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/Provenance": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Provenance",
+        "description": "HL7 FHIR R4: Search Provenance lineage records for a patient vault.",
+        "operationId": "get_fhir_provenance_api_v1_fhir_Provenance_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Vault ID of the patient",
+              "title": "Patient"
+            },
+            "description": "Vault ID of the patient"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Provenance Api V1 Fhir Provenance Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fhir/Provenance/{provenance_id}": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Get Fhir Provenance By Id",
+        "description": "HL7 FHIR R4: Retrieve a specific Provenance resource by ID.",
+        "operationId": "get_fhir_provenance_by_id_api_v1_fhir_Provenance__provenance_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provenance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provenance Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Fhir Provenance By Id Api V1 Fhir Provenance  Provenance Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vaults/{vault_id}/fhir": {
+      "get": {
+        "tags": [
+          "HL7 FHIR R4 Healthcare Standard"
+        ],
+        "summary": "Export Vault Fhir",
+        "description": "Export complete patient locker in HL7 FHIR R4 Bundle format for EHR/ABDM interoperability.",
+        "operationId": "export_vault_fhir_api_v1_vaults__vault_id__fhir_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Export Vault Fhir Api V1 Vaults  Vault Id  Fhir Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vaults/{vault_id}/consents": {
+      "post": {
+        "tags": [
+          "Consent Management"
+        ],
+        "summary": "Create Vault Consent",
+        "description": "Issues a new active FHIR consent policy for the vault.",
+        "operationId": "create_vault_consent_api_v1_vaults__vault_id__consents_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConsentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Vault Consent Api V1 Vaults  Vault Id  Consents Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Consent Management"
+        ],
+        "summary": "List Vault Consents",
+        "description": "Returns all FHIR consent policies for the vault.",
+        "operationId": "list_vault_consents_api_v1_vaults__vault_id__consents_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response List Vault Consents Api V1 Vaults  Vault Id  Consents Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vaults/{vault_id}/consents/{consent_id}": {
+      "delete": {
+        "tags": [
+          "Consent Management"
+        ],
+        "summary": "Revoke Vault Consent",
+        "description": "Revokes an active consent policy.",
+        "operationId": "revoke_vault_consent_api_v1_vaults__vault_id__consents__consent_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          },
+          {
+            "name": "consent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Consent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Revoke Vault Consent Api V1 Vaults  Vault Id  Consents  Consent Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vaults/{vault_id}/audit-trail": {
+      "get": {
+        "tags": [
+          "Audit Trail"
+        ],
+        "summary": "Get Vault Audit Trail",
+        "description": "Returns application audit log history for a medical vault.",
+        "operationId": "get_vault_audit_trail_api_v1_vaults__vault_id__audit_trail_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Get Vault Audit Trail Api V1 Vaults  Vault Id  Audit Trail Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vaults/{vault_id}/provenance": {
+      "get": {
+        "tags": [
+          "Data Provenance"
+        ],
+        "summary": "Get Vault Provenance",
+        "description": "Returns data lineage and provenance records for a medical vault.",
+        "operationId": "get_vault_provenance_api_v1_vaults__vault_id__provenance_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Get Vault Provenance Api V1 Vaults  Vault Id  Provenance Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/locales": {
+      "get": {
+        "tags": [
+          "Internationalization"
+        ],
+        "summary": "List Supported Locales & Languages",
+        "description": "Returns list of supported Indian languages and metadata.",
+        "operationId": "list_locales_api_v1_locales_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/locales/{lang}": {
+      "get": {
+        "tags": [
+          "Internationalization"
+        ],
+        "summary": "Get Complete Locale JSON Dictionary",
+        "description": "Returns the full key-value translation dictionary for a specific language code.",
+        "operationId": "get_locale_dictionary_api_v1_locales__lang__get",
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Lang"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1229,11 +2556,46 @@
         ],
         "title": "Body_upload_document_api_v1_vaults__vault_id__documents_post"
       },
+      "ChangePasswordRequest": {
+        "properties": {
+          "old_password": {
+            "type": "string",
+            "title": "Old Password",
+            "description": "Current password for verification",
+            "examples": [
+              "OldPassword123!"
+            ]
+          },
+          "new_password": {
+            "type": "string",
+            "title": "New Password",
+            "description": "New replacement password (min 6 chars)",
+            "examples": [
+              "NewSecurePassword123!"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "old_password",
+          "new_password"
+        ],
+        "title": "ChangePasswordRequest",
+        "example": {
+          "new_password": "NewSecurePassword123!",
+          "old_password": "OldPassword123!"
+        }
+      },
       "ChatQueryRequest": {
         "properties": {
           "query": {
             "type": "string",
-            "title": "Query"
+            "title": "Query",
+            "description": "Natural language medical or clinical inquiry",
+            "examples": [
+              "What were my latest blood sugar and creatinine readings?"
+            ]
           },
           "document_id": {
             "anyOf": [
@@ -1244,7 +2606,11 @@
                 "type": "null"
               }
             ],
-            "title": "Document Id"
+            "title": "Document Id",
+            "description": "Optional target report document ID to constrain query context",
+            "examples": [
+              1
+            ]
           },
           "context": {
             "anyOf": [
@@ -1255,7 +2621,8 @@
                 "type": "null"
               }
             ],
-            "title": "Context"
+            "title": "Context",
+            "description": "Optional supplemental patient health notes"
           },
           "sources": {
             "anyOf": [
@@ -1270,14 +2637,20 @@
                 "type": "null"
               }
             ],
-            "title": "Sources"
+            "title": "Sources",
+            "description": "Optional pre-filtered retrieval sources"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "query"
         ],
-        "title": "ChatQueryRequest"
+        "title": "ChatQueryRequest",
+        "example": {
+          "document_id": 1,
+          "query": "What were my latest blood sugar and creatinine readings?"
+        }
       },
       "ChatQueryResponse": {
         "properties": {
@@ -1362,6 +2735,46 @@
         },
         "type": "object",
         "title": "ChatSourceOut"
+      },
+      "CreateConsentRequest": {
+        "properties": {
+          "grantee_identifier": {
+            "type": "string",
+            "title": "Grantee Identifier"
+          },
+          "consent_type": {
+            "type": "string",
+            "title": "Consent Type",
+            "default": "patient-privacy"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose",
+            "default": "TREAT"
+          },
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Minutes"
+          },
+          "allowed_resources": {
+            "type": "string",
+            "title": "Allowed Resources",
+            "default": "all"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "grantee_identifier"
+        ],
+        "title": "CreateConsentRequest"
       },
       "DocumentOut": {
         "properties": {
@@ -1508,6 +2921,17 @@
             ],
             "title": "Personal Contact"
           },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
           "emergency_1_name": {
             "anyOf": [
               {
@@ -1609,13 +3033,35 @@
           },
           "username": {
             "type": "string",
-            "title": "Username"
+            "title": "Username",
+            "description": "Unique login handle for family caregiver",
+            "examples": [
+              "mother_user"
+            ]
           },
           "password": {
             "type": "string",
-            "title": "Password"
+            "title": "Password",
+            "description": "Caregiver account password",
+            "examples": [
+              "SecureMember123!"
+            ]
+          },
+          "is_emergency_ready": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Emergency Ready",
+            "description": "Emergency QR enabled status",
+            "default": false
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "full_name",
@@ -1623,7 +3069,17 @@
           "username",
           "password"
         ],
-        "title": "FamilyMemberCreateRequest"
+        "title": "FamilyMemberCreateRequest",
+        "example": {
+          "allergies": "None",
+          "blood_group": "O+",
+          "full_name": "Sunita Dey",
+          "is_emergency_ready": true,
+          "medical_conditions": "Mild Arthritis",
+          "password": "SecureMember123!",
+          "relation": "Mother",
+          "username": "sunita_dey"
+        }
       },
       "HTTPValidationError": {
         "properties": {
@@ -1814,19 +3270,32 @@
         "properties": {
           "username": {
             "type": "string",
-            "title": "Username"
+            "title": "Username",
+            "description": "Registered username or ABHA ID",
+            "examples": [
+              "kostuk"
+            ]
           },
           "password": {
             "type": "string",
-            "title": "Password"
+            "title": "Password",
+            "description": "Account master password",
+            "examples": [
+              "SecurePassword123!"
+            ]
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "username",
           "password"
         ],
-        "title": "LoginRequest"
+        "title": "LoginRequest",
+        "example": {
+          "password": "SecurePassword123!",
+          "username": "kostuk"
+        }
       },
       "OAuthTokenResponse": {
         "properties": {
@@ -2074,6 +3543,7 @@
             "title": "Refresh Token"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "refresh_token"
@@ -2088,25 +3558,34 @@
           },
           "password": {
             "type": "string",
-            "title": "Password"
+            "title": "Password",
+            "description": "Account master password (minimum 6 characters)",
+            "examples": [
+              "SecurePassword123!"
+            ]
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "username",
           "password"
         ],
-        "title": "UserCreate"
+        "title": "UserCreate",
+        "example": {
+          "password": "SecurePassword123!",
+          "username": "kostuk"
+        }
       },
       "UserOut": {
         "properties": {
-          "username": {
-            "type": "string",
-            "title": "Username"
-          },
           "id": {
             "type": "integer",
             "title": "Id"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
           },
           "role": {
             "type": "string",
@@ -2127,8 +3606,8 @@
         },
         "type": "object",
         "required": [
-          "username",
           "id",
+          "username",
           "role"
         ],
         "title": "UserOut"
@@ -2175,6 +3654,10 @@
       },
       "VaultDetailOut": {
         "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
           "full_name": {
             "type": "string",
             "title": "Full Name"
@@ -2237,6 +3720,17 @@
               }
             ],
             "title": "Personal Contact"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
           },
           "emergency_1_name": {
             "anyOf": [
@@ -2337,10 +3831,6 @@
             ],
             "title": "Emergency 3 Phone"
           },
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
           "owner_user_id": {
             "type": "integer",
             "title": "Owner User Id"
@@ -2379,9 +3869,9 @@
         },
         "type": "object",
         "required": [
+          "id",
           "full_name",
           "relation",
-          "id",
           "owner_user_id",
           "qr_token",
           "is_emergency_ready"
@@ -2459,7 +3949,11 @@
                 "type": "null"
               }
             ],
-            "title": "Full Name"
+            "title": "Full Name",
+            "description": "Patient's legal full name",
+            "examples": [
+              "Kostuk Dey"
+            ]
           },
           "blood_group": {
             "anyOf": [
@@ -2470,7 +3964,11 @@
                 "type": "null"
               }
             ],
-            "title": "Blood Group"
+            "title": "Blood Group",
+            "description": "ABO/Rh Blood Group (e.g. B+, O-, AB+)",
+            "examples": [
+              "B+"
+            ]
           },
           "allergies": {
             "anyOf": [
@@ -2481,7 +3979,11 @@
                 "type": "null"
               }
             ],
-            "title": "Allergies"
+            "title": "Allergies",
+            "description": "Known drug and environmental allergies",
+            "examples": [
+              "Peanuts, Penicillin"
+            ]
           },
           "medical_conditions": {
             "anyOf": [
@@ -2492,7 +3994,11 @@
                 "type": "null"
               }
             ],
-            "title": "Medical Conditions"
+            "title": "Medical Conditions",
+            "description": "Chronic or acute medical history",
+            "examples": [
+              "Type 2 Diabetes, Hypertension"
+            ]
           },
           "medications": {
             "anyOf": [
@@ -2503,7 +4009,11 @@
                 "type": "null"
               }
             ],
-            "title": "Medications"
+            "title": "Medications",
+            "description": "Active prescriptions and dosage instructions",
+            "examples": [
+              "Metformin 500mg daily"
+            ]
           },
           "personal_contact": {
             "anyOf": [
@@ -2514,7 +4024,26 @@
                 "type": "null"
               }
             ],
-            "title": "Personal Contact"
+            "title": "Personal Contact",
+            "description": "Patient primary phone number",
+            "examples": [
+              "+918604530535"
+            ]
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address",
+            "description": "Residential residential address",
+            "examples": [
+              "123 Civil Lines, Kanpur, UP"
+            ]
           },
           "emergency_1_name": {
             "anyOf": [
@@ -2525,7 +4054,10 @@
                 "type": "null"
               }
             ],
-            "title": "Emergency 1 Name"
+            "title": "Emergency 1 Name",
+            "examples": [
+              "Rajesh Dey"
+            ]
           },
           "emergency_1_relation": {
             "anyOf": [
@@ -2536,7 +4068,10 @@
                 "type": "null"
               }
             ],
-            "title": "Emergency 1 Relation"
+            "title": "Emergency 1 Relation",
+            "examples": [
+              "Father"
+            ]
           },
           "emergency_1_phone": {
             "anyOf": [
@@ -2547,7 +4082,10 @@
                 "type": "null"
               }
             ],
-            "title": "Emergency 1 Phone"
+            "title": "Emergency 1 Phone",
+            "examples": [
+              "+919876543210"
+            ]
           },
           "emergency_2_name": {
             "anyOf": [
@@ -2558,7 +4096,10 @@
                 "type": "null"
               }
             ],
-            "title": "Emergency 2 Name"
+            "title": "Emergency 2 Name",
+            "examples": [
+              "Sunita Dey"
+            ]
           },
           "emergency_2_relation": {
             "anyOf": [
@@ -2569,7 +4110,10 @@
                 "type": "null"
               }
             ],
-            "title": "Emergency 2 Relation"
+            "title": "Emergency 2 Relation",
+            "examples": [
+              "Mother"
+            ]
           },
           "emergency_2_phone": {
             "anyOf": [
@@ -2580,7 +4124,10 @@
                 "type": "null"
               }
             ],
-            "title": "Emergency 2 Phone"
+            "title": "Emergency 2 Phone",
+            "examples": [
+              "+919876543211"
+            ]
           },
           "emergency_3_name": {
             "anyOf": [
@@ -2591,7 +4138,10 @@
                 "type": "null"
               }
             ],
-            "title": "Emergency 3 Name"
+            "title": "Emergency 3 Name",
+            "examples": [
+              "Amit Verma"
+            ]
           },
           "emergency_3_relation": {
             "anyOf": [
@@ -2602,7 +4152,10 @@
                 "type": "null"
               }
             ],
-            "title": "Emergency 3 Relation"
+            "title": "Emergency 3 Relation",
+            "examples": [
+              "Friend"
+            ]
           },
           "emergency_3_phone": {
             "anyOf": [
@@ -2613,57 +4166,98 @@
                 "type": "null"
               }
             ],
-            "title": "Emergency 3 Phone"
+            "title": "Emergency 3 Phone",
+            "examples": [
+              "+919876543212"
+            ]
+          },
+          "is_emergency_ready": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Emergency Ready",
+            "description": "Ready status for emergency QR retrieval",
+            "examples": [
+              true
+            ]
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "title": "VaultUpdateRequest"
+        "title": "VaultUpdateRequest",
+        "example": {
+          "address": "123 Civil Lines, Kanpur, UP",
+          "allergies": "Peanuts, Penicillin",
+          "blood_group": "B+",
+          "emergency_1_name": "Rajesh Dey",
+          "emergency_1_phone": "+919876543210",
+          "emergency_1_relation": "Father",
+          "full_name": "Kostuk Dey",
+          "is_emergency_ready": true,
+          "medical_conditions": "Hypertension",
+          "medications": "Telmisartan 40mg",
+          "personal_contact": "+918604530535"
+        }
       }
     },
     "securitySchemes": {
-      "OAuth2PasswordBearer": {
-        "type": "oauth2",
-        "flows": {
-          "password": {
-            "scopes": {
-              "openid": "OpenID Connect user authentication",
-              "profile": "Access user identity and vault profile",
-              "health_records": "Read and write clinical medical locker records"
-            },
-            "tokenUrl": "/api/v1/auth/oauth/token"
-          }
-        }
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Provide your JWT Bearer token issued by `/api/v1/auth/login`."
       }
     }
   },
   "tags": [
     {
       "name": "Authentication",
-      "description": "User registration, JWT token generation, and account profile endpoints."
+      "description": "\ud83d\udd10 User registration, OAuth 2.0 & OIDC token issuance, and credential management."
     },
     {
       "name": "Vaults",
-      "description": "Family medical locker management, member provisioning, and QR audit trails."
+      "description": "\ud83d\udcc1 Multi-user family medical lockers, member provisioning, RBAC permissions, and emergency contacts."
     },
     {
       "name": "Documents",
-      "description": "Medical record upload, OCR digital text extraction, streaming, and deletion."
+      "description": "\ud83d\udcc4 Diagnostics PDF uploads, PyMuPDF digital text extraction, OCR indexing, and document streaming."
     },
     {
       "name": "Health Metrics",
-      "description": "Structured biomarker time-series queries and JSON health snapshots."
+      "description": "\ud83e\ude78 Structured clinical biomarkers (Creatinine, Urea, Uric Acid, Hb, Glucose, HbA1c) and historical time-series."
     },
     {
       "name": "AI Clinical Assistant",
-      "description": "RAG-powered conversational medical assistant with biomarker trend interpretation."
+      "description": "\ud83e\udd16 Privacy-first Local RAG Q&A with tiered AI models (Ollama, Groq, Grok) and clinical guardrails."
     },
     {
       "name": "Emergency QR Scan",
-      "description": "Zero-authentication emergency data access endpoint for first responders."
+      "description": "\ud83d\ude91 Zero-login paramedic glass-breaker access with Geo-IP audit logging and life-saving triage briefs."
+    },
+    {
+      "name": "FHIR R4",
+      "description": "\ud83c\udfe5 HL7 FHIR R4 interoperability standard bundles, Patient profiles, and Observation diagnostic resources."
+    },
+    {
+      "name": "Consent Management",
+      "description": "\ud83d\udcdc ABDM-compliant Consent Artifact lifecycle, electronic signatures, verification, and revocation."
+    },
+    {
+      "name": "Audit & Provenance",
+      "description": "\ud83d\udee1\ufe0f Immutable HL7 FHIR AuditEvent trail and W3C PROV cryptographic integrity records."
+    },
+    {
+      "name": "Localization",
+      "description": "\ud83c\udf10 6 Indian language i18n localization dictionary endpoints (EN, HI, BN, TE, TA, MR)."
     },
     {
       "name": "Health",
-      "description": "System liveness and database connectivity probes."
+      "description": "\ud83e\ude7a System liveness, database connectivity, and readiness health probes."
     }
   ]
 }

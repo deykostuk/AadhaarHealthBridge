@@ -19,7 +19,7 @@ class UserBase(StrictInputModel):
 
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(..., description="Account master password (minimum 6 characters)", examples=["SecurePassword123!"])
 
     @field_validator("password", mode="before")
     @classmethod
@@ -29,10 +29,21 @@ class UserCreate(UserBase):
         # Strip null bytes
         return str(v).replace("\x00", "")
 
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+        json_schema_extra={
+            "example": {
+                "username": "kostuk",
+                "password": "SecurePassword123!"
+            }
+        }
+    )
+
 
 class LoginRequest(StrictInputModel):
-    username: str
-    password: str
+    username: str = Field(..., description="Registered username or ABHA ID", examples=["kostuk"])
+    password: str = Field(..., description="Account master password", examples=["SecurePassword123!"])
 
     @field_validator("username", mode="before")
     @classmethod
@@ -46,10 +57,21 @@ class LoginRequest(StrictInputModel):
             raise ValueError("Password cannot be empty.")
         return str(v).replace("\x00", "")
 
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+        json_schema_extra={
+            "example": {
+                "username": "kostuk",
+                "password": "SecurePassword123!"
+            }
+        }
+    )
+
 
 class ChangePasswordRequest(StrictInputModel):
-    old_password: str
-    new_password: str
+    old_password: str = Field(..., description="Current password for verification", examples=["OldPassword123!"])
+    new_password: str = Field(..., description="New replacement password (min 6 chars)", examples=["NewSecurePassword123!"])
 
     @field_validator("old_password", "new_password", mode="before")
     @classmethod
@@ -57,6 +79,17 @@ class ChangePasswordRequest(StrictInputModel):
         if not v or len(str(v)) < 6:
             raise ValueError("Password must be at least 6 characters long.")
         return str(v).replace("\x00", "")
+
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+        json_schema_extra={
+            "example": {
+                "old_password": "OldPassword123!",
+                "new_password": "NewSecurePassword123!"
+            }
+        }
+    )
 
 
 class TokenResponse(BaseModel):
@@ -170,23 +203,23 @@ class VaultProfileBase(StrictInputModel):
 
 
 class VaultUpdateRequest(StrictInputModel):
-    full_name: Optional[str] = None
-    blood_group: Optional[str] = None
-    allergies: Optional[str] = None
-    medical_conditions: Optional[str] = None
-    medications: Optional[str] = None
-    personal_contact: Optional[str] = None
-    address: Optional[str] = None
-    emergency_1_name: Optional[str] = None
-    emergency_1_relation: Optional[str] = None
-    emergency_1_phone: Optional[str] = None
-    emergency_2_name: Optional[str] = None
-    emergency_2_relation: Optional[str] = None
-    emergency_2_phone: Optional[str] = None
-    emergency_3_name: Optional[str] = None
-    emergency_3_relation: Optional[str] = None
-    emergency_3_phone: Optional[str] = None
-    is_emergency_ready: Optional[bool] = None
+    full_name: Optional[str] = Field(None, description="Patient's legal full name", examples=["Kostuk Dey"])
+    blood_group: Optional[str] = Field(None, description="ABO/Rh Blood Group (e.g. B+, O-, AB+)", examples=["B+"])
+    allergies: Optional[str] = Field(None, description="Known drug and environmental allergies", examples=["Peanuts, Penicillin"])
+    medical_conditions: Optional[str] = Field(None, description="Chronic or acute medical history", examples=["Type 2 Diabetes, Hypertension"])
+    medications: Optional[str] = Field(None, description="Active prescriptions and dosage instructions", examples=["Metformin 500mg daily"])
+    personal_contact: Optional[str] = Field(None, description="Patient primary phone number", examples=["+918604530535"])
+    address: Optional[str] = Field(None, description="Residential residential address", examples=["123 Civil Lines, Kanpur, UP"])
+    emergency_1_name: Optional[str] = Field(None, examples=["Rajesh Dey"])
+    emergency_1_relation: Optional[str] = Field(None, examples=["Father"])
+    emergency_1_phone: Optional[str] = Field(None, examples=["+919876543210"])
+    emergency_2_name: Optional[str] = Field(None, examples=["Sunita Dey"])
+    emergency_2_relation: Optional[str] = Field(None, examples=["Mother"])
+    emergency_2_phone: Optional[str] = Field(None, examples=["+919876543211"])
+    emergency_3_name: Optional[str] = Field(None, examples=["Amit Verma"])
+    emergency_3_relation: Optional[str] = Field(None, examples=["Friend"])
+    emergency_3_phone: Optional[str] = Field(None, examples=["+919876543212"])
+    is_emergency_ready: Optional[bool] = Field(None, description="Ready status for emergency QR retrieval", examples=[True])
 
     @field_validator("full_name", "allergies", "medical_conditions", "medications", "address",
                      "emergency_1_name", "emergency_1_relation", "emergency_2_name", "emergency_2_relation",
@@ -205,11 +238,31 @@ class VaultUpdateRequest(StrictInputModel):
     def validate_phone_fields(cls, v):
         return InputSanitizer.sanitize_phone(v)
 
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+        json_schema_extra={
+            "example": {
+                "full_name": "Kostuk Dey",
+                "blood_group": "B+",
+                "allergies": "Peanuts, Penicillin",
+                "medical_conditions": "Hypertension",
+                "medications": "Telmisartan 40mg",
+                "personal_contact": "+918604530535",
+                "address": "123 Civil Lines, Kanpur, UP",
+                "emergency_1_name": "Rajesh Dey",
+                "emergency_1_relation": "Father",
+                "emergency_1_phone": "+919876543210",
+                "is_emergency_ready": True
+            }
+        }
+    )
+
 
 class FamilyMemberCreateRequest(VaultProfileBase):
-    username: str
-    password: str
-    is_emergency_ready: Optional[bool] = False
+    username: str = Field(..., description="Unique login handle for family caregiver", examples=["mother_user"])
+    password: str = Field(..., description="Caregiver account password", examples=["SecureMember123!"])
+    is_emergency_ready: Optional[bool] = Field(False, description="Emergency QR enabled status")
 
     @field_validator("username", mode="before")
     @classmethod
@@ -223,6 +276,22 @@ class FamilyMemberCreateRequest(VaultProfileBase):
             raise ValueError("Password must be at least 6 characters long.")
         return str(v).replace("\x00", "")
 
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+        json_schema_extra={
+            "example": {
+                "full_name": "Sunita Dey",
+                "relation": "Mother",
+                "username": "sunita_dey",
+                "password": "SecureMember123!",
+                "blood_group": "O+",
+                "allergies": "None",
+                "medical_conditions": "Mild Arthritis",
+                "is_emergency_ready": True
+            }
+        }
+    )
 
 class VaultListItemOut(BaseModel):
     id: int
@@ -305,10 +374,10 @@ class QRScanLogOut(BaseModel):
 
 # --- Chat Schemas ---
 class ChatQueryRequest(StrictInputModel):
-    query: str
-    document_id: Optional[int] = None
-    context: Optional[str] = None
-    sources: Optional[List[Dict[str, Any]]] = None
+    query: str = Field(..., description="Natural language medical or clinical inquiry", examples=["What were my latest blood sugar and creatinine readings?"])
+    document_id: Optional[int] = Field(None, description="Optional target report document ID to constrain query context", examples=[1])
+    context: Optional[str] = Field(None, description="Optional supplemental patient health notes")
+    sources: Optional[List[Dict[str, Any]]] = Field(None, description="Optional pre-filtered retrieval sources")
 
     @field_validator("query", mode="before")
     @classmethod
@@ -321,6 +390,17 @@ class ChatQueryRequest(StrictInputModel):
     @classmethod
     def sanitize_context(cls, v):
         return InputSanitizer.sanitize_text(v, max_length=5000) if v else None
+
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+        json_schema_extra={
+            "example": {
+                "query": "What were my latest blood sugar and creatinine readings?",
+                "document_id": 1
+            }
+        }
+    )
 
 
 class ChatSourceOut(BaseModel):
