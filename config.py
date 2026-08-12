@@ -162,5 +162,6 @@ class AppSettings(BaseSettings):
         return self
 
 
-# Create singleton instance
+# Create singleton instance and export Settings alias for backwards compatibility
+Settings = AppSettings
 settings = AppSettings()
