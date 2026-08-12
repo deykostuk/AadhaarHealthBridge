@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Offline Emergency Medical Card | Aadhaar Health Bridge</title>
+    <!-- Theme Manager -->
+    <script src="theme.js"></script>
+    <script src="i18n.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #080d1a; 
+            background-image: radial-gradient(circle at top right, rgba(239, 68, 68, 0.07), transparent 400px),
+                              radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.05), transparent 400px);
+        }
+        .header-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+        .glass-card {
+            background: rgba(31, 41, 55, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .pulse-border {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            animation: red-pulse 2s infinite;
+        }
+        @keyframes red-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        @media print {
+            body { background: white !important; color: black !important; padding: 0 !important; }
+            .glass-panel { box-shadow: none !important; border: 2px solid #000 !important; max-width: 100% !important; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col items-center justify-center p-4">
+
+    <!-- Offline Emergency Container -->
+    <div class="glass-panel max-w-lg w-full rounded-3xl p-6 shadow-2xl space-y-6 relative overflow-hidden">
+        
+        <!-- Red top alert banner -->
+        <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 to-amber-500"></div>
+
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-white/5 pb-4">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl animate-pulse">🚨</span>
+                <div>
+                    <h1 class="text-xs font-black uppercase tracking-widest text-red-500 header-font" data-i18n="offline.title">Offline Medical Card</h1>
+                    <p class="text-[10px] text-slate-400 font-bold" data-i18n="offline.subtitle">Secure Local Device Caching Active</p>
+                </div>
+            </div>
+            <div class="bg-red-950/80 border border-red-500/30 text-red-400 text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-md">
+                <span class="h-1.5 w-1.5 bg-red-500 rounded-full animate-ping"></span>
+                <span data-i18n="offline.emergency_badge">Emergency</span>
+            </div>
+        </div>
+
+        <!-- Patient Demographics Summary Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="glass-card rounded-2xl p-4 flex flex-col">
+                <span class="text-[9px] text-slate-500 font-black uppercase tracking-widest header-font" data-i18n="offline.patient_name">Patient Name</span>
+                <span id="p_name" class="text-sm font-extrabold text-white mt-1">Kostuk Dey</span>
+            </div>
+            <div class="glass-card rounded-2xl p-4 flex flex-col justify-between">
+                <span class="text-[9px] text-slate-500 font-black uppercase tracking-widest header-font" data-i18n="offline.blood_group">Blood Group</span>
+                <span id="p_blood" class="text-sm font-extrabold text-red-400 mt-1">B+</span>
+            </div>
+        </div>
+
+        <!-- Severe Allergies & Conditions -->
+        <div class="space-y-4 bg-slate-950/40 p-4 rounded-2xl border border-white/5">
+            <div>
+                <span class="text-[9px] text-slate-500 font-black uppercase tracking-widest header-font block">🚨 Severe Allergies</span>
+                <p id="p_allergies" class="text-xs text-red-300 font-bold mt-1 leading-relaxed">None reported</p>
+            </div>
+            <hr class="border-white/5">
+            <div>
+                <span class="text-[9px] text-slate-500 font-black uppercase tracking-widest header-font block">🏥 Chronic Medical Conditions</span>
+                <p id="p_conditions" class="text-xs text-slate-300 font-bold mt-1 leading-relaxed">None reported</p>
+            </div>
+            <hr class="border-white/5">
+            <div>
+                <span class="text-[9px] text-slate-500 font-black uppercase tracking-widest header-font block">💊 Active Medications</span>
+                <p id="p_medications" class="text-xs text-slate-300 font-bold mt-1 leading-relaxed">None reported</p>
+            </div>
+        </div>
+
+        <!-- Emergency Caregiver Contacts -->
+        <div class="space-y-3">
+            <span class="text-[9px] text-slate-500 font-black uppercase tracking-widest header-font block">Caregiver Emergency Contacts</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="contacts_container">
+                <!-- Contacts will be injected dynamically -->
+            </div>
+        </div>
+
+        <!-- QR Code Bridge (offline display of scan address) -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4 border border-white/5 bg-slate-950/20">
+            <div class="flex justify-center p-2 bg-white rounded-xl shadow-md border border-white/5 shrink-0">
+                <div id="qrcode_offline" class="p-0.5"></div>
+            </div>
+            <div class="text-center sm:text-left space-y-1.5 flex-1">
+                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest header-font block">Emergency Card Link</span>
+                <p id="p_scan_url" class="text-[10px] text-indigo-400 font-mono font-bold break-all leading-normal"></p>
+                <p class="text-[9px] text-slate-500 leading-relaxed font-medium">Scanning this QR code on an active internet-connected device allows full remote access to secure cloud briefs.</p>
+            </div>
+        </div>
+
+        <!-- Quick Print Action -->
+        <div class="no-print pt-2 flex gap-3">
+            <button onclick="window.print()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-extrabold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all">
+                <span>🖨️</span> <span>Print Medical Card</span>
+            </button>
+            <a href="/" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-extrabold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-white/10 transition-all">
+                <span>🏠</span> <span>Return to App</span>
+            </a>
+        </div>
+
+    </div>
+
+    <!-- PWA Installation Badge -->
+    <p class="text-[9px] text-slate-600 font-bold text-center mt-4">🔒 Zero-Knowledge Cache is stored locally on this physical device. Decrypted in local sandboxed memory only.</p>
+
+    <!-- Logic to load from Local Storage -->
+    <script>
+        // --- Decryption helpers ---
+        async function deriveProfileKey(qrToken) {
+            const enc = new TextEncoder();
+            const tokenBytes = enc.encode(qrToken);
+            const hash = await window.crypto.subtle.digest("SHA-256", tokenBytes);
+            return window.crypto.subtle.importKey(
+                "raw",
+                hash,
+                { name: "AES-GCM" },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function decryptProfile(cipherTextBase64, qrToken) {
+            const key = await deriveProfileKey(qrToken);
+            const binary = atob(cipherTextBase64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            const iv = bytes.slice(0, 12);
+            const ciphertext = bytes.slice(12);
+            const decrypted = await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                ciphertext
+            );
+            return new TextDecoder().decode(decrypted);
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenParam = urlParams.get('token') || urlParams.get('v');
+            
+            let dataStr = localStorage.getItem("offline_emergency_profile");
+            if (!dataStr && tokenParam) {
+                dataStr = localStorage.getItem(`emergency_vault_${tokenParam}`);
+            }
+            if (!dataStr) {
+                // Check any cached emergency vault
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith("emergency_vault_")) {
+                        dataStr = localStorage.getItem(key);
+                        break;
+                    }
+                }
+            }
+
+            if (!dataStr) {
+                document.body.innerHTML = `
+                    <div class="glass-panel max-w-sm w-full rounded-3xl p-8 text-center border border-red-500/20 bg-red-950/10 space-y-4">
+                        <span class="text-4xl block">🔒</span>
+                        <h1 class="text-xs font-black uppercase tracking-widest text-red-500 header-font">No Offline Profile Cached</h1>
+                        <p class="text-[10px] text-slate-400 leading-relaxed font-medium">Please login to your AadhaarHealthBridge dashboard online once to cache your life-saving medical details locally for offline use.</p>
+                        <a href="/api/v1/login" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md">Go to Login</a>
+                    </div>
+                `;
+                return;
+            }
+
+            let profile;
+            try {
+                // Try reading directly if it was saved as plaintext
+                profile = JSON.parse(dataStr);
+            } catch (err) {
+                // If it fails to parse as JSON, it's encrypted. Decrypt using QR token in URL query or pathname.
+                try {
+                    const pathParts = window.location.pathname.split('/');
+                    const pathToken = pathParts[pathParts.length - 1];
+                    const qrToken = tokenParam || (pathToken && pathToken !== "offline_emergency.html" ? pathToken : null);
+                    if (!qrToken) {
+                        throw new Error("No valid scan token present");
+                    }
+                    const decryptedText = await decryptProfile(dataStr, qrToken);
+                    profile = JSON.parse(decryptedText);
+                } catch (decErr) {
+                    console.error("Profile decryption failed:", decErr);
+                    document.body.innerHTML = `
+                        <div class="glass-panel max-w-sm w-full rounded-3xl p-8 text-center border border-red-500/20 bg-red-950/10 space-y-4">
+                            <span class="text-4xl block">🔒</span>
+                            <h1 class="text-xs font-black uppercase tracking-widest text-red-500 header-font">Decryption Failed</h1>
+                            <p class="text-[10px] text-slate-400 leading-relaxed font-medium">This emergency record is encrypted and requires a physical scan of the active patient QR code to be viewed.</p>
+                        </div>
+                    `;
+                    return;
+                }
+            }
+
+            try {
+                
+                // Set text contents safely
+                document.getElementById("p_name").textContent = profile.full_name || "Not Specified";
+                document.getElementById("p_blood").textContent = profile.blood_group || "Not Specified";
+                document.getElementById("p_allergies").textContent = profile.allergies || "No Known Allergies";
+                document.getElementById("p_conditions").textContent = profile.medical_conditions || "None reported";
+                document.getElementById("p_medications").textContent = profile.medications || "None reported";
+                document.getElementById("p_scan_url").textContent = profile.scan_url || "";
+
+                // Generate local QR Code safely
+                if (profile.scan_url) {
+                    try {
+                        if (typeof QRCode === "undefined") {
+                            throw new Error("QRCode library not loaded yet.");
+                        }
+                        new QRCode(document.getElementById("qrcode_offline"), {
+                            text: profile.scan_url,
+                            width: 100,
+                            height: 100,
+                            colorDark : "#080d1a",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.M
+                        });
+                    } catch (err) {
+                        console.error("Local QR Code Generation failed:", err);
+                        const qrBox = document.getElementById("qrcode_offline");
+                        if (qrBox) {
+                            qrBox.innerHTML = `<div class="text-[8px] text-red-500 font-bold text-center p-2">⚠️ failed to load QR code</div>`;
+                        }
+                    }
+                }
+
+                // Render Contacts (at least 2 emergency caregiver contacts recommended)
+                const container = document.getElementById("contacts_container");
+                container.innerHTML = "";
+                const t = (key) => (window.AHB_I18N ? window.AHB_I18N.t(key) : key);
+                const translateRel = (rel) => (window.AHB_I18N ? window.AHB_I18N.translateRelation(rel) : rel);
+                
+                const contacts = [
+                    { name: profile.emergency_1_name, rel: profile.emergency_1_relation || 'Primary Caregiver', phone: profile.emergency_1_phone, priorityKey: 'contact.primary' },
+                    { name: profile.emergency_2_name, rel: profile.emergency_2_relation || 'Secondary Caregiver', phone: profile.emergency_2_phone, priorityKey: 'contact.secondary' },
+                    { name: profile.emergency_3_name, rel: profile.emergency_3_relation || 'Doctor / Friend', phone: profile.emergency_3_phone, priorityKey: 'contact.alternative' }
+                ].filter(c => c.name || c.phone);
+
+                if (contacts.length === 0) {
+                    if (profile.personal_contact) {
+                        contacts.push({
+                            name: profile.full_name || t('offline.patient_name'),
+                            rel: 'Patient Direct Phone',
+                            phone: profile.personal_contact,
+                            priorityKey: 'contact.primary'
+                        });
+                    }
+                }
+
+                if (contacts.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-2 text-center bg-red-950/20 border border-red-500/20 rounded-2xl p-4 space-y-2">
+                            <span class="text-xl">⚠️</span>
+                            <p class="text-xs font-bold text-red-400">${t('overview.no_contacts_warning')}</p>
+                            <p class="text-[9px] text-slate-400 font-medium">${t('overview.no_contacts_desc')}</p>
+                            <a href="/" class="inline-block mt-2 bg-slate-800 hover:bg-slate-700 text-white text-[9px] font-bold px-3 py-1.5 rounded-lg border border-white/10">${t('overview.add_contacts_btn')}</a>
+                        </div>
+                    `;
+                } else {
+                    contacts.forEach((c, idx) => {
+                        const card = document.createElement("div");
+                        card.className = "bg-slate-950/60 p-4 rounded-2xl border border-white/10 flex flex-col justify-between space-y-2 shadow-lg";
+                        const isPrimary = idx === 0;
+                        const badgeColor = isPrimary ? "bg-red-950 text-red-400 border-red-500/30" : "bg-indigo-950 text-indigo-400 border-indigo-500/30";
+                        const btnColor = isPrimary ? "bg-red-600 hover:bg-red-700" : "bg-indigo-600 hover:bg-indigo-700";
+
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="text-sm font-extrabold text-white">${c.name || t('overview.emergency_contact')}</h4>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">${translateRel(c.rel)}</p>
+                                </div>
+                                <span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${badgeColor}">${t(c.priorityKey)}</span>
+                            </div>
+                            <div class="pt-1">
+                                ${c.phone ? `
+                                    <a href="tel:${c.phone}" class="w-full ${btnColor} text-white font-extrabold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-95">
+                                        <span>📞</span>
+                                        <span>${t('contact.call')} ${c.name ? c.name.split(' ')[0] : t('contact.caregiver')} (${c.phone})</span>
+                                    </a>
+                                ` : `
+                                    <span class="text-[10px] text-slate-500 font-bold">${t('overview.no_phone')}</span>
+                                `}
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                }
+
+            } catch (err) {
+                console.error("Offline loading failed: ", err);
+            }
+        });
+    </script>
+</body>
+</html>

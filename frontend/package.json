@@ -1,0 +1,19 @@
+{
+  "name": "aadhaar-health-bridge-frontend",
+  "version": "1.0.0",
+  "description": "Standalone Progressive Web App (PWA) client for Aadhaar Health Bridge",
+  "scripts": {
+    "dev": "npx serve -p 3000 .",
+    "serve": "python serve.py 3000",
+    "start": "npx serve -p 3000 ."
+  },
+  "keywords": [
+    "pwa",
+    "healthcare",
+    "fhir",
+    "i18n",
+    "offline-first"
+  ],
+  "author": "Aadhaar Health Bridge Team",
+  "license": "MIT"
+}
