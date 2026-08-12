@@ -109,11 +109,21 @@ async def export_patient_data_bundle(
         raise HTTPException(status_code=404, detail="Vault not found.")
 
     # 1. FHIR R4 Bundle
-    fhir_svc = FHIRService(db)
-    fhir_bundle = fhir_svc.generate_patient_fhir_bundle(vault_id)
+    from app.services.fhir_service import fhir_service
+    metrics = db.query(HealthMetric).filter(HealthMetric.vault_id == vault_id).all()
+    docs = db.query(Document).filter(Document.vault_id == vault_id).all()
+    logs = db.query(QRScanLog).filter(QRScanLog.vault_id == vault_id).order_by(QRScanLog.timestamp.desc()).limit(100).all()
+    consents = db.query(ConsentRecord).filter(ConsentRecord.vault_id == vault_id).all()
+
+    fhir_bundle = fhir_service.build_patient_bundle(
+        vault=profile,
+        metrics=metrics,
+        docs=docs,
+        scan_logs=logs,
+        consents=consents
+    )
 
     # 2. Documents List (with PII metadata)
-    docs = db.query(Document).filter(Document.vault_id == vault_id).all()
     docs_manifest = [
         {
             "document_id": d.id,
@@ -126,7 +136,6 @@ async def export_patient_data_bundle(
     ]
 
     # 3. Audit Logs (Masked IP addresses)
-    logs = db.query(QRScanLog).filter(QRScanLog.vault_id == vault_id).order_by(QRScanLog.timestamp.desc()).limit(100).all()
     audit_manifest = [
         {
             "timestamp": l.timestamp.isoformat() if l.timestamp else None,
