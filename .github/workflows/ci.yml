@@ -1,0 +1,168 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - frontend
+      - backend
+  pull_request:
+    branches:
+      - main
+      - frontend
+      - backend
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =========================================================================
+  # 1. Automated Test Suite (FastAPI, FHIR, RAG, Auth, RBAC, Encryption)
+  # =========================================================================
+  backend-tests:
+    name: Backend Test Suite (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11']
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then
+            pip install -r backend/requirements.txt
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Run Pytest Test Suite
+        env:
+          PYTHONUTF8: "1"
+          ENVIRONMENT: "testing"
+          ALLOW_EXTERNAL_AI_APIS: "false"
+        run: |
+          if [ -d backend/tests ]; then
+            cd backend && pytest -v --tb=short
+          elif [ -d tests ]; then
+            pytest -v --tb=short
+          fi
+
+  # =========================================================================
+  # 2. Static Application Security Testing (SAST) & OWASP Hardening Scan
+  # =========================================================================
+  security-sast:
+    name: SAST Security & Bandit Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Security Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit
+
+      - name: Run Bandit Security Scanner
+        env:
+          PYTHONUTF8: "1"
+        run: |
+          if [ -f backend/.bandit.yaml ]; then
+            bandit -c backend/.bandit.yaml -r backend/app -ll -v
+          elif [ -f .bandit.yaml ]; then
+            bandit -c .bandit.yaml -r app -ll -v
+          else
+            bandit -r backend/app -ll -v || true
+          fi
+
+      - name: Audit Dependencies for Known Vulnerabilities
+        run: |
+          if [ -f backend/requirements.txt ]; then
+            pip-audit -r backend/requirements.txt || true
+          elif [ -f requirements.txt ]; then
+            pip-audit -r requirements.txt || true
+          fi
+
+  # =========================================================================
+  # 3. Secret Leak Prevention (Gitleaks Scanner)
+  # =========================================================================
+  secrets-guard:
+    name: Secret Leak Detection & Guardrail
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code (Full History)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks Secret Detector
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  # =========================================================================
+  # 4. Frontend & i18n Localization Integrity Checks
+  # =========================================================================
+  frontend-validation:
+    name: Frontend & i18n Localization Validator
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate Localization JSON Dictionaries & PWA Manifest
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            
+            const localesDir = fs.existsSync('frontend/locales') 
+              ? 'frontend/locales' 
+              : (fs.existsSync('locales') ? 'locales' : 'backend/app/static/locales');
+            
+            if (fs.existsSync(localesDir)) {
+              const langs = ['en', 'hi', 'bn', 'ta', 'te', 'mr'];
+              langs.forEach(lang => {
+                const filePath = path.join(localesDir, lang + '.json');
+                if (fs.existsSync(filePath)) {
+                  const content = fs.readFileSync(filePath, 'utf8');
+                  JSON.parse(content);
+                  console.log('✅ ' + lang + '.json is valid JSON');
+                }
+              });
+            }
+
+            const manifestPath = fs.existsSync('frontend/manifest.json') 
+              ? 'frontend/manifest.json' 
+              : (fs.existsSync('manifest.json') ? 'manifest.json' : 'backend/app/static/manifest.json');
+            
+            if (fs.existsSync(manifestPath)) {
+              JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+              console.log('✅ PWA manifest.json is valid JSON');
+            }
+          "
