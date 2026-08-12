@@ -1215,6 +1215,7 @@ class HealthBridgePWA {
       ]);
     } catch (err) {
       this.showToast(`Delete failed: ${err.message}`, 'error');
+    }
   }
 
   // 16. Local RAG Chat Assistant
