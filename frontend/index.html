@@ -1265,10 +1265,18 @@
     }
 
     function fillDemoCredentials() {
-      document.getElementById('login-username').value = 'kostuk';
-      document.getElementById('login-password').value = 'Demo1234!';
-      if (window.healthBridgeApp) {
-        window.healthBridgeApp.showToast('Demo credentials prefilled!', 'info');
+      const uEl = document.getElementById('login-username');
+      const pEl = document.getElementById('login-password');
+      if (uEl) uEl.value = 'kostuk';
+      if (pEl) pEl.value = 'Demo1234!';
+      
+      const form = document.getElementById('login-form');
+      if (form) {
+        if (typeof form.requestSubmit === 'function') {
+          form.requestSubmit();
+        } else {
+          form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
       }
     }
 

@@ -5,14 +5,8 @@
  * drag-and-drop report processing, and multilingual translation support.
  */
 
-// Determine API base endpoint: supports standalone frontend hosting (e.g. localhost:3000 -> localhost:5000)
-const BACKEND_BASE = window.AHB_API_BASE_URL || (
-  (typeof window !== 'undefined' && (window.location.port === "5000" || window.location.protocol === "file:"))
-    ? ""
-    : (typeof window !== 'undefined' && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))
-      ? "http://127.0.0.1:5000"
-      : ""
-);
+// Determine API base endpoint (uses current host/port by default or explicit window.AHB_API_BASE_URL)
+const BACKEND_BASE = window.AHB_API_BASE_URL || "";
 const API_BASE = `${BACKEND_BASE}/api/v1`;
 
 /**
