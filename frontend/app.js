@@ -1436,6 +1436,63 @@ class HealthBridgePWA {
       pane.classList.toggle('active', pane.id === `tab-${tabName}`);
     });
   }
+
+  // 22. Instant Emergency Contact SOS & GPS Alert System
+  async triggerEmergencySOS() {
+    if (!this.activeVaultId) {
+      this.showToast('Please select an active patient vault first.', 'error');
+      return;
+    }
+
+    if (!confirm('🚨 BROADCAST EMERGENCY SOS ALERT?\n\nThis will immediately capture your current GPS coordinates and dispatch urgent alerts to all registered emergency contacts via SMS and WhatsApp.')) {
+      return;
+    }
+
+    this.showToast('📍 Acquiring high-accuracy GPS coordinates...', 'info');
+
+    const getGPSPosition = () => new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy_meters: pos.coords.accuracy
+        }),
+        (err) => {
+          console.warn('Geolocation failed or denied:', err);
+          resolve(null);
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    });
+
+    const coords = await getGPSPosition();
+
+    try {
+      const payload = {
+        latitude: coords ? coords.latitude : null,
+        longitude: coords ? coords.longitude : null,
+        accuracy_meters: coords ? coords.accuracy_meters : null,
+        trigger_source: 'one_tap_pwa'
+      };
+
+      const result = await this.apiRequest(`/vaults/${this.activeVaultId}/sos`, 'POST', payload);
+      this.showToast(`🚨 SOS Broadcast Dispatched to ${result.contacts_notified_count || 0} Emergency Contacts!`, 'success');
+
+      // Open WhatsApp Dispatch if links exist
+      if (result.whatsapp_dispatch_links && result.whatsapp_dispatch_links.length > 0) {
+        const firstContact = result.whatsapp_dispatch_links[0];
+        if (confirm(`Open WhatsApp to send instant emergency broadcast to ${firstContact.contact_name} (${firstContact.relation})?`)) {
+          window.open(firstContact.whatsapp_url, '_blank');
+        }
+      }
+    } catch (err) {
+      this.showToast(`Emergency SOS broadcast error: ${err.message}`, 'error');
+    }
+  }
 }
 
 // Instantiate PWA client on DOM Ready

@@ -86,6 +86,7 @@ class VaultProfile(Base):
     audit_logs = relationship("AuditLog", back_populates="vault", cascade="all, delete-orphan")
     provenance_records = relationship("ProvenanceRecord", back_populates="vault", cascade="all, delete-orphan")
     embeddings = relationship("DocumentEmbedding", back_populates="vault", cascade="all, delete-orphan")
+    sos_logs = relationship("SOSAlertLog", back_populates="vault", cascade="all, delete-orphan")
 
 class VaultAccess(Base):
     __tablename__ = "vault_access"
@@ -200,3 +201,24 @@ class DocumentEmbedding(Base):
 
     vault = relationship("VaultProfile", back_populates="embeddings")
     document = relationship("Document", back_populates="embeddings")
+
+class SOSAlertLog(Base):
+    __tablename__ = 'sos_alert_logs'
+    id = Column(Integer, primary_key=True, index=True)
+    vault_id = Column(Integer, ForeignKey('vault_profiles.id', ondelete="CASCADE"), nullable=False, index=True)
+    trigger_source = Column(String(50), default="qr_scan")  # "qr_scan" | "one_tap_pwa" | "paramedic_app"
+    latitude = Column(String(30), nullable=True)
+    longitude = Column(String(30), nullable=True)
+    accuracy_meters = Column(String(30), nullable=True)
+    maps_url = Column(String(255), nullable=True)
+    location_name = Column(String(255), nullable=True)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+    recipients_count = Column(Integer, default=0)
+    dispatch_status = Column(String(50), default="dispatched")  # "dispatched" | "delivered" | "failed"
+    dispatch_channels = Column(String(100), default="sms,whatsapp,push")
+    alert_message = Column(Text, nullable=True)
+    cryptographic_hash = Column(String(64), nullable=True)  # SHA-256 tamper seal
+    created_at = Column(DateTime, default=utc_now)
+
+    vault = relationship("VaultProfile", back_populates="sos_logs")

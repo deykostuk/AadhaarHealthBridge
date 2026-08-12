@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Tuple
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from typing import List, Tuple, Dict, Any
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -9,7 +9,9 @@ from app.schemas.patient import (
     VaultDetailOut,
     VaultUpdateRequest,
     FamilyMemberCreateRequest,
-    QRScanLogOut
+    QRScanLogOut,
+    SOSDispatchIn,
+    SOSAlertLogOut
 )
 from app.middleware.auth import get_current_user_hybrid
 from app.middleware.rbac import RequireVaultPermission, Permission
@@ -96,3 +98,47 @@ async def delete_vault(
     db.delete(vault)
     db.commit()
     return {"status": "success", "message": f"Vault profile {vault_id} deleted successfully."}
+
+
+@router.post("/{vault_id}/sos", status_code=status.HTTP_200_OK)
+async def trigger_vault_sos_broadcast(
+    vault_id: int,
+    payload: SOSDispatchIn,
+    request: Request,
+    vault_and_access: Tuple[VaultProfile, str] = Depends(RequireVaultPermission(Permission.VAULT_READ)),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """
+    Patient / Caregiver One-Tap Emergency SOS Broadcast.
+    Dispatches instant notifications with current GPS coordinates to all registered contacts.
+    """
+    from app.services.sos_service import sos_service
+    vault, _ = vault_and_access
+    ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown").split(",")[0].strip()
+    user_agent = request.headers.get("User-Agent", "")
+
+    return sos_service.dispatch_sos(
+        vault=vault,
+        db=db,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        accuracy_meters=payload.accuracy_meters,
+        trigger_source=payload.trigger_source or "one_tap_pwa",
+        ip_address=ip,
+        user_agent=user_agent
+    )
+
+
+@router.get("/{vault_id}/sos/history", response_model=List[SOSAlertLogOut])
+async def get_vault_sos_history(
+    vault_id: int,
+    limit: int = 20,
+    vault_and_access: Tuple[VaultProfile, str] = Depends(RequireVaultPermission(Permission.AUDIT_READ)),
+    db: Session = Depends(get_db)
+):
+    """Retrieves chronological SOS incident broadcast history for a vault."""
+    from app.models.patient import SOSAlertLog
+    return db.query(SOSAlertLog).filter(
+        SOSAlertLog.vault_id == vault_id
+    ).order_by(SOSAlertLog.created_at.desc()).limit(limit).all()
+
