@@ -1,17 +1,27 @@
 import os
+import base64
+import hashlib
 from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
 
 load_dotenv()
 
+def _get_or_derive_key(env_var: str, default_seed: str) -> str:
+    val = os.getenv(env_var)
+    if val:
+        return val
+    # Derive deterministic 32-byte urlsafe base64 key from default seed
+    derived = hashlib.sha256(default_seed.encode("utf-8")).digest()
+    return base64.urlsafe_b64encode(derived).decode("utf-8")
+
 class Settings:
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development").lower()
     
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "prod-super-secret-key-12345-secure")
-    JWT_SECRET: str = os.getenv("JWT_SECRET", "prod-jwt-secret-key-67890-secure")
-    FERNET_KEY: str = os.getenv("FERNET_KEY", "X7Q_Z8uP9K1wL2mN3vO4rS5tU6vW7xY8zA9bC0dE1fG=")
-    DATABASE_ENCRYPTION_KEY: str = os.getenv("DATABASE_ENCRYPTION_KEY", os.getenv("FERNET_KEY", "X7Q_Z8uP9K1wL2mN3vO4rS5tU6vW7xY8zA9bC0dE1fG="))
-    KMS_MASTER_KEY_256: str = os.getenv("KMS_MASTER_KEY_256", os.getenv("DATABASE_ENCRYPTION_KEY", "X7Q_Z8uP9K1wL2mN3vO4rS5tU6vW7xY8zA9bC0dE1fG="))
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "ahb-dev-secret-key-change-in-production")
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "ahb-dev-jwt-secret-change-in-production")
+    FERNET_KEY: str = _get_or_derive_key("FERNET_KEY", "ahb-fernet-key-seed-dev")
+    DATABASE_ENCRYPTION_KEY: str = _get_or_derive_key("DATABASE_ENCRYPTION_KEY", "ahb-db-encryption-seed-dev")
+    KMS_MASTER_KEY_256: str = _get_or_derive_key("KMS_MASTER_KEY_256", "ahb-kms-master-seed-dev")
     
     # Key Management Service (KMS) & HashiCorp Vault Settings
     KMS_PROVIDER: str = os.getenv("KMS_PROVIDER", "local").lower() # "local" | "vault" | "aws" | "azure"

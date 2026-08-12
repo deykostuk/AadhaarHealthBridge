@@ -42,7 +42,7 @@ class LocalKMSProvider(BaseKMSProvider):
 
     def __init__(self, raw_secret: Optional[str] = None):
         self._keys: Dict[str, bytes] = {}
-        raw = raw_secret or settings.KMS_MASTER_KEY_256 or settings.FERNET_KEY or "X7Q_Z8uP9K1wL2mN3vO4rS5tU6vW7xY8zA9bC0dE1fG="
+        raw = raw_secret or getattr(settings, "KMS_MASTER_KEY_256", None) or getattr(settings, "FERNET_KEY", None) or "ahb-kms-master-seed-dev"
         
         if isinstance(raw, str):
             if raw.startswith("b'") and raw.endswith("'"):
@@ -227,9 +227,12 @@ class KMSService:
 
         # Fallback for legacy Fernet tokens
         try:
-            raw = getattr(settings, "FERNET_KEY", "X7Q_Z8uP9K1wL2mN3vO4rS5tU6vW7xY8zA9bC0dE1fG=")
+            raw = getattr(settings, "FERNET_KEY", None) or "ahb-fernet-key-seed-dev"
             if isinstance(raw, str) and raw.startswith("b'") and raw.endswith("'"):
                 raw = raw[2:-1]
+            if len(raw) != 44 or not raw.endswith("="):
+                # Ensure 32-byte urlsafe base64 if a raw seed was passed
+                raw = base64.urlsafe_b64encode(hashlib.sha256(raw.encode("utf-8")).digest()).decode("utf-8")
             f = Fernet(raw if isinstance(raw, bytes) else raw.encode())
             return f.decrypt(envelope.encode("utf-8")).decode("utf-8")
         except Exception:
