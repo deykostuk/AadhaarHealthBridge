@@ -714,6 +714,128 @@
         }
       }
     },
+    "/api/v1/vaults/{vault_id}/sos": {
+      "post": {
+        "tags": [
+          "Vaults"
+        ],
+        "summary": "Trigger Vault Sos Broadcast",
+        "description": "Patient / Caregiver One-Tap Emergency SOS Broadcast.\nDispatches instant notifications with current GPS coordinates to all registered contacts.",
+        "operationId": "trigger_vault_sos_broadcast_api_v1_vaults__vault_id__sos_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SOSDispatchIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Trigger Vault Sos Broadcast Api V1 Vaults  Vault Id  Sos Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vaults/{vault_id}/sos/history": {
+      "get": {
+        "tags": [
+          "Vaults"
+        ],
+        "summary": "Get Vault Sos History",
+        "description": "Retrieves chronological SOS incident broadcast history for a vault.",
+        "operationId": "get_vault_sos_history_api_v1_vaults__vault_id__sos_history_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vault_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vault Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SOSAlertLogOut"
+                  },
+                  "title": "Response Get Vault Sos History Api V1 Vaults  Vault Id  Sos History Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/vaults/{vault_id}/documents": {
       "get": {
         "tags": [
@@ -1111,7 +1233,7 @@
     "/api/v1/scan/{token}/data": {
       "get": {
         "tags": [
-          "Emergency QR Scan"
+          "Emergency QR Scan & SOS Alerts"
         ],
         "summary": "Get Emergency Scan Data",
         "description": "REST API: Retrieve patient emergency medical data via zero-auth QR token.",
@@ -1134,6 +1256,106 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VaultDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scan/{token}/sos": {
+      "post": {
+        "tags": [
+          "Emergency QR Scan & SOS Alerts"
+        ],
+        "summary": "Trigger Emergency Scan Sos",
+        "description": "Paramedic / First Responder Emergency SOS & GPS Broadcast.\nDispatches instant alerts with GPS location to all registered emergency contacts.",
+        "operationId": "trigger_emergency_scan_sos_api_v1_scan__token__sos_post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SOSDispatchIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Trigger Emergency Scan Sos Api V1 Scan  Token  Sos Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scan/{token}/contacts": {
+      "get": {
+        "tags": [
+          "Emergency QR Scan & SOS Alerts"
+        ],
+        "summary": "Get Emergency Scan Contacts",
+        "description": "Retrieves emergency contacts and instant 1-tap WhatsApp broadcast links.",
+        "operationId": "get_emergency_scan_contacts_api_v1_scan__token__contacts_get",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Emergency Scan Contacts Api V1 Scan  Token  Contacts Get"
                 }
               }
             }
@@ -3796,6 +4018,179 @@
           "refresh_token"
         ],
         "title": "RefreshTokenRequest"
+      },
+      "SOSAlertLogOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "vault_id": {
+            "type": "integer",
+            "title": "Vault Id"
+          },
+          "trigger_source": {
+            "type": "string",
+            "title": "Trigger Source"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "accuracy_meters": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy Meters"
+          },
+          "maps_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maps Url"
+          },
+          "recipients_count": {
+            "type": "integer",
+            "title": "Recipients Count"
+          },
+          "dispatch_status": {
+            "type": "string",
+            "title": "Dispatch Status"
+          },
+          "dispatch_channels": {
+            "type": "string",
+            "title": "Dispatch Channels"
+          },
+          "cryptographic_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cryptographic Hash"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "vault_id",
+          "trigger_source",
+          "recipients_count",
+          "dispatch_status",
+          "dispatch_channels"
+        ],
+        "title": "SOSAlertLogOut"
+      },
+      "SOSDispatchIn": {
+        "properties": {
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude",
+            "description": "GPS Latitude coordinate",
+            "examples": [
+              26.8467
+            ]
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude",
+            "description": "GPS Longitude coordinate",
+            "examples": [
+              80.9462
+            ]
+          },
+          "accuracy_meters": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accuracy Meters",
+            "description": "GPS accuracy radius in meters",
+            "examples": [
+              15.0
+            ]
+          },
+          "trigger_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Source",
+            "description": "Trigger source: qr_scan | one_tap_pwa | bystander",
+            "default": "qr_scan",
+            "examples": [
+              "qr_scan"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SOSDispatchIn"
       },
       "UserCreate": {
         "properties": {

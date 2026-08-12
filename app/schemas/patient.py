@@ -427,3 +427,29 @@ class HealthStatusResponse(BaseModel):
 class ApiResponse(BaseModel):
     status: str = "success"
     message: str
+
+
+# --- Emergency SOS Schemas ---
+class SOSDispatchIn(StrictInputModel):
+    latitude: Optional[float] = Field(None, description="GPS Latitude coordinate", examples=[26.8467])
+    longitude: Optional[float] = Field(None, description="GPS Longitude coordinate", examples=[80.9462])
+    accuracy_meters: Optional[float] = Field(None, description="GPS accuracy radius in meters", examples=[15.0])
+    trigger_source: Optional[str] = Field("qr_scan", description="Trigger source: qr_scan | one_tap_pwa | bystander", examples=["qr_scan"])
+
+
+class SOSAlertLogOut(BaseModel):
+    id: int
+    vault_id: int
+    trigger_source: str
+    latitude: Optional[str] = None
+    longitude: Optional[str] = None
+    accuracy_meters: Optional[str] = None
+    maps_url: Optional[str] = None
+    recipients_count: int
+    dispatch_status: str
+    dispatch_channels: str
+    cryptographic_hash: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
