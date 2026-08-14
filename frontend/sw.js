@@ -9,8 +9,8 @@
  * 3. Secure Purge: Listens for 'PURGE_SECURE_CACHE' postMessage on user logout.
  */
 
-const STATIC_CACHE = 'healthbridge-static-v2';
-const EMERGENCY_CACHE = 'healthbridge-emergency-v2';
+const STATIC_CACHE = 'healthbridge-static-v3';
+const EMERGENCY_CACHE = 'healthbridge-emergency-v3';
 
 const PUBLIC_STATIC_ASSETS = [
   '/',

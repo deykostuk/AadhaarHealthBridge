@@ -12,24 +12,42 @@
     <script src="qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #f8fafc;
+            --text: #0f172a;
+            --panel-bg: #ffffff;
+            --panel-border: #cbd5e1;
+            --card-bg: #f1f5f9;
+            --card-border: #e2e8f0;
+            --alert-text: #e11d48;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0b0f19;
+                --text: #f1f5f9;
+                --panel-bg: #111827;
+                --panel-border: #1f2937;
+                --card-bg: #1e293b;
+                --card-border: #334155;
+                --alert-text: #fb7185;
+            }
+        }
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #080d1a; 
-            background-image: radial-gradient(circle at top right, rgba(239, 68, 68, 0.07), transparent 400px),
-                              radial-gradient(circle at bottom left, rgba(99, 102, 241, 0.05), transparent 400px);
+            background-color: var(--bg);
+            color: var(--text);
         }
         .header-font {
             font-family: 'Space Grotesk', sans-serif;
         }
         .glass-panel {
-            background: rgba(17, 24, 39, 0.7);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
         .glass-card {
-            background: rgba(31, 41, 55, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
         }
         .pulse-border {
             box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
@@ -40,10 +58,39 @@
             70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
-        @media print {
-            body { background: white !important; color: black !important; padding: 0 !important; }
-            .glass-panel { box-shadow: none !important; border: 2px solid #000 !important; max-width: 100% !important; }
-            .no-print { display: none !important; }
+        }
+        /* Default scheme (Light Scheme Overrides for Tailwind utility classes) */
+        .text-white,
+        .text-slate-100,
+        .text-slate-200,
+        .text-slate-300,
+        .text-slate-400 {
+            color: #0f172a !important;
+        }
+        .text-slate-500 {
+            color: #64748b !important;
+        }
+        
+        /* Dark scheme Overrides for Tailwind utility classes */
+        @media (prefers-color-scheme: dark) {
+            .text-white {
+                color: #ffffff !important;
+            }
+            .text-slate-100 {
+                color: #f1f5f9 !important;
+            }
+            .text-slate-200 {
+                color: #e2e8f0 !important;
+            }
+            .text-slate-300 {
+                color: #cbd5e1 !important;
+            }
+            .text-slate-400 {
+                color: #94a3b8 !important;
+            }
+            .text-slate-500 {
+                color: #64748b !important;
+            }
         }
     </style>
 </head>

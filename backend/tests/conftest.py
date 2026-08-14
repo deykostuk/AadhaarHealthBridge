@@ -26,11 +26,25 @@ def reset_rate_limiter():
     from app.middleware.rate_limiter import limiter
     from app.services.lockout_service import lockout_service
     limiter.storage.clear()
+    if getattr(limiter, "_redis_client", None) is not None:
+        try:
+            keys = limiter._redis_client.keys("ratelimit:*")
+            if keys:
+                limiter._redis_client.delete(*keys)
+        except Exception:
+            pass
     with lockout_service._lock:
         lockout_service._failed_attempts.clear()
         lockout_service._lockout_expiry.clear()
     yield
     limiter.storage.clear()
+    if getattr(limiter, "_redis_client", None) is not None:
+        try:
+            keys = limiter._redis_client.keys("ratelimit:*")
+            if keys:
+                limiter._redis_client.delete(*keys)
+        except Exception:
+            pass
     with lockout_service._lock:
         lockout_service._failed_attempts.clear()
         lockout_service._lockout_expiry.clear()

@@ -279,6 +279,55 @@ class HealthBridgePWA {
       vaultSelect.addEventListener('change', (e) => {
         this.activeVaultId = parseInt(e.target.value, 10);
         this.loadActiveVaultData();
+        this.syncCustomVaultDropdown();
+      });
+    }
+
+    // Custom dropdown trigger toggle and click outside logic
+    const trigger = document.getElementById('vault-dropdown-trigger');
+    const container = document.getElementById('vault-dropdown-container');
+    const options = document.getElementById('vault-dropdown-options');
+    if (trigger && options) {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this._closeBiomarkerDateDropdown) {
+          this._closeBiomarkerDateDropdown();
+        }
+        const profileOptions = document.getElementById('profile-dropdown-options');
+        if (profileOptions) profileOptions.style.display = 'none';
+        document.getElementById('header-profile-menu')?.classList.remove('open');
+
+        const isOpen = options.style.display === 'block';
+        options.style.display = isOpen ? 'none' : 'block';
+        container?.classList.toggle('open', !isOpen);
+      });
+      document.addEventListener('click', () => {
+        options.style.display = 'none';
+        container?.classList.remove('open');
+      });
+    }
+
+    // Profile dropdown trigger toggle and click outside logic
+    const profileTrigger = document.getElementById('profile-dropdown-trigger');
+    const profileContainer = document.getElementById('header-profile-menu');
+    const profileOptions = document.getElementById('profile-dropdown-options');
+    if (profileTrigger && profileOptions) {
+      profileTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this._closeBiomarkerDateDropdown) {
+          this._closeBiomarkerDateDropdown();
+        }
+        const vaultOptions = document.getElementById('vault-dropdown-options');
+        if (vaultOptions) vaultOptions.style.display = 'none';
+        document.getElementById('vault-dropdown-container')?.classList.remove('open');
+
+        const isOpen = profileOptions.style.display === 'block';
+        profileOptions.style.display = isOpen ? 'none' : 'block';
+        profileContainer?.classList.toggle('open', !isOpen);
+      });
+      document.addEventListener('click', () => {
+        profileOptions.style.display = 'none';
+        profileContainer?.classList.remove('open');
       });
     }
 
@@ -330,7 +379,6 @@ class HealthBridgePWA {
         this.renderBiomarkers(this.allMetrics);
       }
       if (this.documents) {
-        this.renderDocuments(this.documents);
         this.renderFiles(this.documents);
       }
       if (this.auditLogs) {
@@ -478,6 +526,12 @@ class HealthBridgePWA {
     this.vaults = [];
     this.activeVaultId = null;
     this.activeVault = null;
+    this.selectedBiomarkerDate = null;
+    this.sortedBiomarkerDates = [];
+    this.biomarkerDatesMap = {};
+    if (this._closeBiomarkerDateDropdown) {
+      this._closeBiomarkerDateDropdown();
+    }
     localStorage.removeItem('hb_token');
     sessionStorage.removeItem('hb_token');
 
@@ -499,6 +553,11 @@ class HealthBridgePWA {
         userDisplay.textContent = `👤 ${this.currentUser.username || 'User'}`;
       }
 
+      const profileDisplay = document.getElementById('profile-display-name');
+      if (profileDisplay && this.currentUser) {
+        profileDisplay.textContent = this.currentUser.username || 'User';
+      }
+
       this.vaults = await this.apiRequest('/vaults');
 
       if (this.vaults.length > 0) {
@@ -508,6 +567,7 @@ class HealthBridgePWA {
       this.populateVaultSelector();
       this.showView('app');
       await this.loadActiveVaultData();
+      this.switchTab('documents');
     } catch (err) {
       console.warn('Failed to load profile:', err);
       this.handleLogout();
@@ -526,10 +586,50 @@ class HealthBridgePWA {
       selector.appendChild(opt);
     });
     if (this.activeVaultId) selector.value = this.activeVaultId;
+
+    // Sync to custom dropdown UI
+    this.syncCustomVaultDropdown();
+  }
+
+  syncCustomVaultDropdown() {
+    const selector = document.getElementById('vault-select');
+    const selectedText = document.getElementById('vault-dropdown-selected-text');
+    const optionsContainer = document.getElementById('vault-dropdown-options');
+    if (!selector || !selectedText || !optionsContainer) return;
+
+    optionsContainer.innerHTML = '';
+    
+    // Set text on trigger button
+    const selectedOpt = selector.options[selector.selectedIndex];
+    if (selectedOpt) {
+      selectedText.textContent = selectedOpt.textContent;
+      
+      // Update top-left profile display name
+      const profileDisplay = document.getElementById('profile-display-name');
+      if (profileDisplay) {
+        profileDisplay.textContent = selectedOpt.textContent.split(' (')[0];
+      }
+    }
+
+    // Build custom dropdown options list
+    Array.from(selector.options).forEach((opt) => {
+      const div = document.createElement('div');
+      div.className = `custom-dropdown-option${opt.value == selector.value ? ' selected' : ''}`;
+      div.textContent = opt.textContent;
+      div.dataset.value = opt.value;
+      div.addEventListener('click', (e) => {
+        selector.value = opt.value;
+        selector.dispatchEvent(new Event('change'));
+        optionsContainer.style.display = 'none';
+        document.getElementById('vault-dropdown-container')?.classList.remove('open');
+      });
+      optionsContainer.appendChild(div);
+    });
   }
 
   async loadActiveVaultData() {
     if (!this.activeVaultId) return;
+    this.selectedBiomarkerDate = null;
 
     try {
       this.activeVault = await this.apiRequest(`/vaults/${this.activeVaultId}`);
@@ -821,77 +921,459 @@ class HealthBridgePWA {
       
       if (badge) badge.textContent = this.allMetrics.length;
 
-      this.renderBiomarkers(this.allMetrics);
+      // Group metrics by observed date
+      this.biomarkerDatesMap = {};
+      this.allMetrics.forEach(m => {
+        const dateStr = m.observed_date ? m.observed_date.split('T')[0] : 'recent';
+        if (!this.biomarkerDatesMap[dateStr]) {
+          this.biomarkerDatesMap[dateStr] = [];
+        }
+        this.biomarkerDatesMap[dateStr].push(m);
+      });
+
+      this.sortedBiomarkerDates = Object.keys(this.biomarkerDatesMap).sort((a, b) => {
+        if (a === 'recent') return 1;
+        if (b === 'recent') return -1;
+        return new Date(b) - new Date(a);
+      });
+
+      // Set default selected date to the latest available
+      if (!this.selectedBiomarkerDate || !this.sortedBiomarkerDates.includes(this.selectedBiomarkerDate)) {
+        this.selectedBiomarkerDate = this.sortedBiomarkerDates[0] || 'recent';
+      }
+
+      this.renderDateSelector();
+      this.applyBiomarkerFilters();
     } catch (err) {
       container.innerHTML = '<p style="color: #fb7185;">Failed to load health metrics.</p>';
     }
   }
 
+  getMetricDetails(name, value) {
+    const BIOMARKER_METADATA = {
+      creatinine: { displayName: 'Creatinine', min: 0.5, max: 1.3, category: 'Kidney Function' },
+      urea: { displayName: 'Urea (BUN)', min: 7.0, max: 20.0, category: 'Kidney Function' },
+      uric_acid: { displayName: 'Uric Acid', min: 3.5, max: 7.2, category: 'Kidney Function' },
+      hemoglobin: { displayName: 'Hemoglobin', min: 12.0, max: 17.5, category: 'Blood Count' },
+      sugar: { displayName: 'Blood Sugar', min: 70, max: 140, category: 'Metabolic' },
+      glucose: { displayName: 'Blood Sugar', min: 70, max: 140, category: 'Metabolic' },
+      hba1c: { displayName: 'HbA1c', min: 4.0, max: 5.6, category: 'Metabolic' },
+      cholesterol: { displayName: 'Total Cholesterol', min: 100, max: 200, category: 'Lipid Profile' },
+      platelets: { displayName: 'Platelet Count', min: 150000, max: 450000, category: 'Blood Count' },
+      wbc: { displayName: 'WBC Count', min: 4000, max: 11000, category: 'Blood Count' },
+      rbc: { displayName: 'RBC Count', min: 4.2, max: 6.1, category: 'Blood Count' },
+      bilirubin: { displayName: 'Total Bilirubin', min: 0.1, max: 1.2, category: 'Liver Function' },
+      sgot: { displayName: 'SGOT (AST)', min: 5.0, max: 40.0, category: 'Liver Function' },
+      ast: { displayName: 'SGOT (AST)', min: 5.0, max: 40.0, category: 'Liver Function' },
+      sgpt: { displayName: 'SGPT (ALT)', min: 7.0, max: 56.0, category: 'Liver Function' },
+      alt: { displayName: 'SGPT (ALT)', min: 7.0, max: 56.0, category: 'Liver Function' },
+      alkaline_phosphatase: { displayName: 'Alkaline Phosphatase', min: 44, max: 147, category: 'Liver Function' },
+      alp: { displayName: 'Alkaline Phosphatase', min: 44, max: 147, category: 'Liver Function' },
+      albumin: { displayName: 'Albumin', min: 3.4, max: 5.4, category: 'Liver Function' },
+      sodium: { displayName: 'Sodium', min: 135, max: 145, category: 'Electrolytes' },
+      potassium: { displayName: 'Potassium', min: 3.5, max: 5.1, category: 'Electrolytes' },
+      calcium: { displayName: 'Calcium', min: 8.5, max: 10.5, category: 'Electrolytes' }
+    };
+
+    const cleanKey = name.toLowerCase().replace(/[\s_-]+/g, '');
+    let meta = null;
+    for (const k in BIOMARKER_METADATA) {
+      if (cleanKey.includes(k)) {
+        meta = BIOMARKER_METADATA[k];
+        break;
+      }
+    }
+
+    let displayName = name.split(/[\s_-]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    displayName = displayName.replace(/\bHba1c\b/i, 'HbA1c')
+                             .replace(/\bWbc\b/i, 'WBC')
+                             .replace(/\bRbc\b/i, 'RBC')
+                             .replace(/\bBun\b/i, 'BUN')
+                             .replace(/\bSgot\b/i, 'SGOT')
+                             .replace(/\bSgpt\b/i, 'SGPT')
+                             .replace(/\bAlp\b/i, 'ALP')
+                             .replace(/\bAst\b/i, 'AST')
+                             .replace(/\bAlt\b/i, 'ALT');
+
+    let min = null, max = null, category = 'General';
+    if (meta) {
+      displayName = meta.displayName;
+      min = meta.min;
+      max = meta.max;
+      category = meta.category;
+    }
+
+    let statusClass = 'normal';
+    let statusText = 'Normal Range';
+    const numVal = parseFloat(value);
+    
+    if (!isNaN(numVal) && min !== null && max !== null) {
+      if (numVal < min) {
+        statusClass = 'low';
+        statusText = 'Low';
+      } else if (numVal > max) {
+        statusClass = 'high';
+        statusText = 'High';
+      }
+    }
+
+    return { displayName, min, max, category, statusClass, statusText };
+  }
+
+  renderDateSelector() {
+    const headerFlex = document.querySelector('#tab-biomarkers > div:first-child');
+    if (!headerFlex) return;
+
+    // Clean up any existing dropdown and listener
+    if (this._closeBiomarkerDateDropdown) {
+      this._closeBiomarkerDateDropdown();
+    }
+
+    // Remove any existing date wrapper to prevent duplicates
+    const oldWrapper = document.getElementById('biomarker-date-selector-wrapper');
+    if (oldWrapper) oldWrapper.remove();
+
+    if (!this.sortedBiomarkerDates || this.sortedBiomarkerDates.length === 0) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.id = 'biomarker-date-selector-wrapper';
+    wrapper.style.cssText = 'position: relative; margin-left: auto;';
+
+    const formatDate = (dateStr) => {
+      if (dateStr === 'recent') return 'Recent Observation';
+      const d = new Date(dateStr);
+      if (isNaN(d)) return dateStr;
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    const selectedText = formatDate(this.selectedBiomarkerDate);
+    const hasMultiple = this.sortedBiomarkerDates.length > 1;
+
+    wrapper.innerHTML = `
+      <div id="biomarker-report-date-badge" style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; font-weight: 700; cursor: ${hasMultiple ? 'pointer' : 'default'}; box-shadow: var(--panel-shadow);">
+        📅 <span style="margin-left: 0.25rem;">${selectedText}</span> ${hasMultiple ? '<span style="font-size: 0.65rem; color: var(--text-muted); margin-left: 0.25rem;">▼</span>' : ''}
+      </div>
+      <div id="biomarker-date-dropdown-menu" style="display: none; position: absolute; top: calc(100% + 6px); right: 0; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 1000; min-width: 160px; overflow: hidden; padding: 0.3rem 0;">
+      </div>
+    `;
+
+    headerFlex.appendChild(wrapper);
+
+    const badge = wrapper.querySelector('#biomarker-report-date-badge');
+    const menu = wrapper.querySelector('#biomarker-date-dropdown-menu');
+
+    if (badge && menu && hasMultiple) {
+      const closeMenu = () => {
+        menu.style.display = 'none';
+        document.removeEventListener('click', closeMenu);
+        this._closeBiomarkerDateDropdown = null;
+      };
+
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = menu.style.display === 'block';
+        if (isOpen) {
+          closeMenu();
+        } else {
+          // Close other custom dropdowns in the app if they are open
+          const vaultOptions = document.getElementById('vault-dropdown-options');
+          if (vaultOptions) vaultOptions.style.display = 'none';
+          document.getElementById('vault-dropdown-container')?.classList.remove('open');
+
+          const profileOptions = document.getElementById('profile-dropdown-options');
+          if (profileOptions) profileOptions.style.display = 'none';
+          document.getElementById('header-profile-menu')?.classList.remove('open');
+
+          menu.style.display = 'block';
+          this._closeBiomarkerDateDropdown = closeMenu;
+          document.addEventListener('click', closeMenu);
+        }
+      });
+
+      this.sortedBiomarkerDates.forEach(dateStr => {
+        const item = document.createElement('div');
+        item.className = `biomarker-date-item ${dateStr === this.selectedBiomarkerDate ? 'active' : ''}`;
+        item.textContent = formatDate(dateStr);
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.selectedBiomarkerDate = dateStr;
+          closeMenu();
+          this.renderDateSelector();
+          this.applyBiomarkerFilters();
+        });
+        menu.appendChild(item);
+      });
+    }
+  }
+
   renderBiomarkers(metrics) {
     const container = document.getElementById('metrics-list');
+    const summaryContainer = document.getElementById('biomarkers-summary-container');
     if (!container) return;
 
     if (!metrics || metrics.length === 0) {
-      container.innerHTML = '<div class="glass-card" style="grid-column: 1/-1; text-align: center;"><p class="text-muted">No health metrics extracted yet. Upload a diagnostic lab report PDF to extract clinical observations.</p></div>';
+      container.innerHTML = '<div class="glass-card" style="grid-column: 1/-1; text-align: center;"><p class="text-muted">No health metrics match the active filters.</p></div>';
+      if (summaryContainer) summaryContainer.innerHTML = '';
       return;
     }
 
-    container.innerHTML = metrics.map((m) => {
-      let statusClass = 'normal';
-      let statusText = 'Normal Range';
+    // Categories status map
+    const categoryStatus = {
+      'Kidney Function': 'Good',
+      'General Health': 'Good',
+      'Blood Count': 'Good',
+      'Metabolic': 'Good'
+    };
 
-      const numVal = parseFloat(m.metric_value);
-      if (!isNaN(numVal)) {
-        if (m.metric_name.toLowerCase().includes('glucose') && numVal > 140) {
-          statusClass = 'elevated';
-          statusText = 'Elevated';
-        } else if (m.metric_name.toLowerCase().includes('cholesterol') && numVal > 200) {
-          statusClass = 'high';
-          statusText = 'High';
-        }
+    let totalAbnormal = 0;
+
+    container.innerHTML = metrics.map((m) => {
+      const details = this.getMetricDetails(m.metric_name, m.metric_value);
+      
+      if (details.statusClass !== 'normal') {
+        totalAbnormal++;
+        if (details.category === 'Kidney Function') categoryStatus['Kidney Function'] = 'Review';
+        else if (details.category === 'Blood Count') categoryStatus['Blood Count'] = 'Review';
+        else if (details.category === 'Metabolic') categoryStatus['Metabolic'] = 'Review';
+        else categoryStatus['General Health'] = 'Review';
       }
 
-      return `
-        <div class="biomarker-card">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-              <h4 style="font-size: 0.95rem; font-weight: 700;">${m.metric_name}</h4>
-              <small class="text-muted">${m.observed_date ? new Date(m.observed_date).toLocaleDateString() : 'Recent Observation'}</small>
+      // Determine visual range slider track parameters
+      let rangeHtml = '';
+      const numVal = parseFloat(m.metric_value);
+      if (!isNaN(numVal) && details.min !== null && details.max !== null) {
+        const minVal = details.min;
+        const maxVal = details.max;
+        const diff = maxVal - minVal;
+        
+        const trackMin = Math.max(0, minVal - diff * 0.4);
+        const trackMax = maxVal + diff * 0.4;
+        const trackRange = trackMax - trackMin;
+        
+        const minPercent = ((minVal - trackMin) / trackRange) * 100;
+        const maxPercent = ((maxVal - trackMin) / trackRange) * 100;
+        
+        let valuePercent = ((numVal - trackMin) / trackRange) * 100;
+        valuePercent = Math.max(0, Math.min(100, valuePercent));
+        
+        rangeHtml = `
+          <div style="margin-top: 0.8rem; padding-left: 3.5rem;">
+            <div class="biomarker-range-track" style="height: 10px; background: var(--slate-700); border-radius: 5px; position: relative; margin-bottom: 0.4rem;">
+              <div class="biomarker-range-bar" style="position: absolute; height: 100%; background: #10b981; opacity: 0.25; border-radius: 5px; left: ${minPercent}%; width: ${maxPercent - minPercent}%;"></div>
+              <div class="biomarker-value-indicator ${details.statusClass}" style="position: absolute; top: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--panel-bg); background: #0d9488; left: ${valuePercent}%;"></div>
             </div>
-            <span class="biomarker-badge ${statusClass}">${statusText}</span>
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">
+              <span>Min: ${minVal}</span>
+              <span>Max: ${maxVal}</span>
+            </div>
           </div>
-          <div style="display: flex; align-items: baseline; gap: 0.35rem; margin-top: 0.25rem;">
-            <span style="font-size: 1.8rem; font-weight: 800; color: var(--primary-light);">${m.metric_value}</span>
-            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">${m.metric_unit || ''}</span>
+        `;
+      } else {
+        rangeHtml = `
+          <div style="margin-top: 0.8rem; padding-left: 3.5rem;">
+            <div style="border-top: 1px dashed var(--border-glow); margin-bottom: 0.4rem; opacity: 0.6;"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">
+              <span>Reference range</span>
+              <span>-</span>
+            </div>
           </div>
-          <div style="font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid var(--border-glow); padding-top: 0.4rem; display: flex; justify-content: space-between;">
-            <span>HL7 Observation</span>
-            <span>Ref: Standard</span>
+        `;
+      }
+
+      // Map icons for display
+      let iconBg = '#f1f3f4';
+      let iconColor = '#5f6368';
+      let iconSvg = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 2v8L4.7 18.2a2 2 0 0 0 1.7 2.8h11.2a2 2 0 0 0 1.7-2.8L14 10V2" />
+        </svg>
+      `;
+
+      const cleanKey = m.metric_name.toLowerCase().replace(/[\s_-]+/g, '');
+      if (cleanKey.includes('creatinine')) {
+        iconBg = 'rgba(16, 185, 129, 0.1)';
+        iconColor = '#10b981';
+        iconSvg = `
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 21a9 9 0 0 0 9-9c0-5-9-10-9-10S3 7 3 12a9 9 0 0 0 9 9z" />
+            <path d="M12 7c-2 2-3 4-3 5.5s1 2.5 3 2.5 3-1 3-2.5S14 9 12 7z" opacity="0.3" fill="currentColor"/>
+          </svg>
+        `;
+      } else if (cleanKey.includes('urea')) {
+        iconBg = 'rgba(56, 189, 248, 0.1)';
+        iconColor = '#0ea5e9';
+        iconSvg = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-13-7-13S5 10.7 5 15a7 7 0 0 0 7 7z" />
+          </svg>
+        `;
+      } else if (cleanKey.includes('uric')) {
+        iconBg = 'rgba(139, 92, 246, 0.1)';
+        iconColor = '#8b5cf6';
+        iconSvg = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5" r="2.5" />
+            <circle cx="6" cy="12" r="2.5" />
+            <circle cx="18" cy="12" r="2.5" />
+            <circle cx="12" cy="19" r="2.5" />
+            <line x1="12" y1="7.5" x2="12" y2="16.5" />
+            <line x1="7.5" y1="11" x2="16.5" y2="11" />
+          </svg>
+        `;
+      } else if (cleanKey.includes('hemoglobin')) {
+        iconBg = 'rgba(239, 68, 68, 0.1)';
+        iconColor = '#ef4444';
+        iconSvg = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L4 10a8 8 0 1 0 16 0L12 2z" />
+          </svg>
+        `;
+      }
+
+      const statusColor = details.statusClass === 'normal' ? '#10b981' : '#ef4444';
+      const statusTextLabel = details.statusClass === 'normal' ? 'Within normal range' : 'Requires attention';
+
+      return `
+        <div class="biomarker-card" style="box-shadow: var(--panel-shadow); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.25rem; background: var(--card-bg); display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: ${iconBg}; color: ${iconColor};">
+                ${iconSvg}
+              </div>
+              <div>
+                <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.25;">${details.displayName}</h4>
+                <small style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">${details.category}</small>
+              </div>
+            </div>
+            <span class="biomarker-badge ${details.statusClass}" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.68rem; font-weight: 800; border-radius: 20px; padding: 4px 10px;">
+              <span style="font-size: 0.75rem; font-weight: 900;">✓</span> ${details.statusText}
+            </span>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 0.35rem; margin-top: 1rem; margin-bottom: 0.5rem; padding-left: 3.5rem;">
+            <span style="font-size: 2.2rem; font-weight: 800; color: #0d9488; line-height: 1;">${m.metric_value}</span>
+            <span style="font-size: 0.95rem; color: var(--text-muted); font-weight: 600;">${m.metric_unit || ''}</span>
+          </div>
+          ${rangeHtml}
+          <div style="margin: 1.25rem -1.25rem -1.25rem -1.25rem; padding: 0.65rem 1.25rem; background: var(--slate-900); border-top: 1px solid var(--border-glow); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem; margin-top: auto;">
+            <span style="color: ${statusColor}; font-weight: 700; display: flex; align-items: center; gap: 0.25rem;">
+              ✓ ${statusTextLabel}
+            </span>
+            <span style="color: var(--text-muted); font-weight: 600; opacity: 0.8;">HL7 Observation</span>
           </div>
         </div>
       `;
     }).join('');
+
+    // Set title and subtitle inside biomarkers tab
+    const titleBlock = document.querySelector('#tab-biomarkers h2[data-i18n="biomarkers.title"]');
+    if (titleBlock) {
+      const hasKidney = metrics.some(m => m.metric_name.toLowerCase().includes('creatinine') || m.metric_name.toLowerCase().includes('urea'));
+      titleBlock.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(16, 185, 129, 0.1); color: #10b981;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 2v8L4.7 18.2a2 2 0 0 0 1.7 2.8h11.2a2 2 0 0 0 1.7-2.8L14 10V2" />
+              <path d="M8.5 2h7M7 14h10" />
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 1.6rem; font-weight: 800; line-height: 1.2;">${hasKidney ? 'Kidney Health Report' : 'Clinical Health Report'}</div>
+            <div style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">Lab Test Summary</div>
+          </div>
+        </div>
+      `;
+      const sub = titleBlock.nextElementSibling;
+      if (sub && sub.tagName.toLowerCase() === 'p') {
+        sub.style.display = 'none';
+      }
+    }
+
+    // Build the Overall Summary Section
+    if (summaryContainer) {
+      const allNormal = totalAbnormal === 0;
+      const statusColor = allNormal ? '#10b981' : '#ef4444';
+      const summaryText = allNormal 
+        ? 'All parameters are in <span style="color: #10b981; font-weight: 700;">normal range</span>.'
+        : 'Some parameters <span style="color: #ef4444; font-weight: 700;">require attention</span>.';
+      const overallStatusText = allNormal ? 'Normal' : 'Attention';
+
+      const getStatusItemHtml = (title, status) => {
+        const isGood = status === 'Good';
+        const color = isGood ? '#10b981' : '#f59e0b';
+        return `
+          <div style="display: flex; flex-direction: column; gap: 0.15rem; min-width: 110px;">
+            <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">
+              <span style="color: ${color};">✓</span> ${title}
+            </div>
+            <div style="font-size: 0.95rem; font-weight: 800; color: ${color};">${status}</div>
+          </div>
+        `;
+      };
+
+      summaryContainer.innerHTML = `
+        <div class="glass-card" style="margin-top: 2rem; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 16px;">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(16, 185, 129, 0.1); color: #10b981;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </div>
+            <div>
+              <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0; line-height: 1.2;">Overall Summary</h4>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0.15rem 0 0 0; font-weight: 500;">${summaryText}</p>
+            </div>
+          </div>
+          
+          <div class="summary-divider" style="width: 1px; height: 42px; background: rgba(16, 185, 129, 0.2);"></div>
+          
+          <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; flex: 1; justify-content: space-around; min-width: 280px;">
+            ${getStatusItemHtml('Kidney Function', categoryStatus['Kidney Function'])}
+            ${getStatusItemHtml('General Health', categoryStatus['General Health'])}
+            ${getStatusItemHtml('Blood Count', categoryStatus['Blood Count'])}
+            <div style="display: flex; flex-direction: column; gap: 0.15rem; min-width: 110px;">
+              <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">
+                <span>✓</span> Overall Status
+              </div>
+              <div style="font-size: 0.95rem; font-weight: 800; color: ${statusColor};">${overallStatusText}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; padding: 0 0.5rem; font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">
+          <span style="font-size: 0.85rem; color: var(--indigo-600);">ⓘ</span> Note: This report is for informational purposes only. Please consult your doctor for medical advice.
+        </div>
+      `;
+    }
+  }
+
+  applyBiomarkerFilters() {
+    const query = (document.getElementById('biomarker-search')?.value || '').toLowerCase().trim();
+    const selectedDate = this.selectedBiomarkerDate || 'recent';
+
+    // Get metrics of the selected date
+    let filtered = this.biomarkerDatesMap[selectedDate] || [];
+
+    if (query) {
+      filtered = filtered.filter(m => {
+        const details = this.getMetricDetails(m.metric_name, m.metric_value);
+        return details.displayName.toLowerCase().includes(query) ||
+               m.metric_name.toLowerCase().includes(query) ||
+               (m.metric_unit && m.metric_unit.toLowerCase().includes(query));
+      });
+    }
+
+    this.renderBiomarkers(filtered);
   }
 
   filterBiomarkers(query) {
-    const q = (query || '').toLowerCase().trim();
-    if (!q) {
-      this.renderBiomarkers(this.allMetrics);
-      return;
-    }
-    const filtered = this.allMetrics.filter((m) =>
-      m.metric_name.toLowerCase().includes(q) ||
-      (m.metric_unit && m.metric_unit.toLowerCase().includes(q))
-    );
-    this.renderBiomarkers(filtered);
+    this.applyBiomarkerFilters();
   }
 
   // 14. Documents & Files Tabs
   async loadDocuments() {
     if (!this.activeVaultId) return;
-    const container = document.getElementById('documents-list');
+    const container = document.getElementById('files-grid');
     const badge = document.getElementById('doc-count-badge');
-    const filesBadge = document.getElementById('file-count-badge');
 
     try {
       const docs = await this.apiRequest(`/vaults/${this.activeVaultId}/documents`);
@@ -899,48 +1381,11 @@ class HealthBridgePWA {
       this.allFiles = this.documents;
 
       if (badge) badge.textContent = this.documents.length;
-      if (filesBadge) filesBadge.textContent = this.documents.length;
 
-      this.renderDocuments(this.documents);
       this.renderFiles(this.documents);
     } catch (err) {
       if (container) container.innerHTML = '<p style="color: #fb7185;">Failed to load documents.</p>';
     }
-  }
-
-  renderDocuments(docs) {
-    const container = document.getElementById('documents-list');
-    if (!container) return;
-    const t = (key) => (window.AHB_I18N ? window.AHB_I18N.t(key) : key);
-
-    if (!docs || docs.length === 0) {
-      container.innerHTML = '<div class="glass-card" style="grid-column: 1/-1; text-align: center;"><p class="text-muted">No medical documents uploaded yet. Upload your first PDF above.</p></div>';
-      return;
-    }
-
-    container.innerHTML = docs.map((d) => {
-      const cleanName = d.file_name || 'Medical Document';
-      const cat = d.category || 'Clinical Report';
-      return `
-        <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
-          <div>
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-              <span style="font-size: 1.6rem;">📄</span>
-              <span class="badge" style="background: rgba(20, 184, 166, 0.15); color: #2dd4bf; border-radius: 6px; font-size: 0.72rem;">${cat}</span>
-            </div>
-            <h4 style="font-size: 0.95rem; font-weight: 700; word-break: break-word;">${cleanName}</h4>
-            <small class="text-muted" style="display: block; margin-top: 0.35rem;">Uploaded: ${d.upload_date ? new Date(d.upload_date).toLocaleDateString() : 'Today'}</small>
-          </div>
-          <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-glow); display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; gap: 0.35rem;">
-              <button class="btn btn-sm btn-primary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="window.healthBridgeApp.openPdfViewer(${d.id}, '${cleanName.replace(/'/g, "\\'")}', '${cat.replace(/'/g, "\\'")}')">👁️ Open</button>
-              <button class="btn btn-sm" style="background: #25D366; color: white; border: none; font-size: 0.72rem; padding: 0.2rem 0.45rem;" onclick="window.healthBridgeApp.sharePdfWhatsApp(${d.id}, '${cleanName.replace(/'/g, "\\'")}', '${cat.replace(/'/g, "\\'")}', '${d.upload_date || ''}')">💬</button>
-            </div>
-            <button class="btn btn-sm btn-danger" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="window.healthBridgeApp.deleteDocument(${d.id})">Delete</button>
-          </div>
-        </div>
-      `;
-    }).join('');
   }
 
   async renderFiles(docs) {
@@ -957,8 +1402,8 @@ class HealthBridgePWA {
         <div class="glass-card" style="grid-column: 1/-1; text-align: center; padding: 2.5rem 1.5rem;">
           <span style="font-size: 3rem; display: block; margin-bottom: 0.75rem;">📁</span>
           <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.35rem;">${t('files.empty')}</h4>
-          <p class="text-muted" style="font-size: 0.85rem; max-width: 420px; margin: 0 auto 1.25rem;">Upload blood tests, imaging PDFs, discharge summaries, or prescriptions to view and share.</p>
-          <button class="btn btn-primary btn-sm" onclick="window.healthBridgeApp.switchTab('documents')">+ ${t('documents.upload_btn')}</button>
+          <p class="text-muted" style="font-size: 0.85rem; max-width: 420px; margin: 0 auto 1.25rem;">Upload blood tests, prescriptions, or medical reports to view and share them.</p>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('doc-file-input').click()">+ ${t('documents.upload_btn')}</button>
         </div>
       `;
       return;
@@ -1379,6 +1824,8 @@ class HealthBridgePWA {
   async handleAddFamilyMember(e) {
     e.preventDefault();
     const name = document.getElementById('member-name').value.trim();
+    const username = document.getElementById('member-username').value.trim();
+    const password = document.getElementById('member-password').value;
     const relation = document.getElementById('member-relation').value;
     const bloodGroup = document.getElementById('member-blood-group').value;
     const phone = document.getElementById('member-phone').value.trim();
@@ -1388,6 +1835,8 @@ class HealthBridgePWA {
         method: 'POST',
         body: JSON.stringify({
           full_name: name,
+          username: username,
+          password: password,
           relation: relation,
           blood_group: bloodGroup,
           emergency_1_phone: phone
@@ -1460,15 +1909,24 @@ class HealthBridgePWA {
     const authView = document.getElementById('auth-view');
     const appView = document.getElementById('app-view');
     const userControls = document.getElementById('user-controls');
+    const profileMenu = document.getElementById('header-profile-menu');
+    const navbarLangSelect = document.getElementById('ahb-lang-select');
+    const navbarThemeBtn = document.querySelector('.nav-actions .theme-toggle-btn') || document.querySelector('.theme-toggle-btn');
 
     if (viewName === 'auth') {
       if (authView) authView.style.display = 'flex';
       if (appView) appView.style.display = 'none';
       if (userControls) userControls.style.display = 'none';
+      if (profileMenu) profileMenu.style.display = 'none';
+      if (navbarLangSelect) navbarLangSelect.style.display = 'inline-block';
+      if (navbarThemeBtn) navbarThemeBtn.style.display = 'inline-flex';
     } else {
       if (authView) authView.style.display = 'none';
       if (appView) appView.style.display = 'grid';
       if (userControls) userControls.style.display = 'flex';
+      if (profileMenu) profileMenu.style.display = 'inline-block';
+      if (navbarLangSelect) navbarLangSelect.style.display = 'none';
+      if (navbarThemeBtn) navbarThemeBtn.style.display = 'none';
     }
   }
 

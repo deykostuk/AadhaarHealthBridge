@@ -1,21 +1,20 @@
 /* CSS Variables for Dynamic Theme Switching */
 :root {
-  /* Default Light Mode Variables */
-  --bg-color: #f4f6fa;
-  --bg-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.04), transparent 450px),
-              radial-gradient(circle at bottom left, rgba(239, 68, 68, 0.02), transparent 450px);
-  --bg-gradient: linear-gradient(135deg, #f4f6fa 0%, #e2e8f0 100%);
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
+  /* Default Light Mode Variables - Crisp, Medical-Grade, Highly Legible */
+  --bg-color: #f8fafc;
+  --bg-image: none;
+  --bg-gradient: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
   --text-muted: #64748b;
   
-  --panel-bg: rgba(255, 255, 255, 0.75);
-  --panel-border: rgba(0, 0, 0, 0.08);
-  --panel-shadow: 0 10px 45px rgba(0, 0, 0, 0.04);
+  --panel-bg: #ffffff;
+  --panel-border: #e2e8f0;
+  --panel-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
   
-  --card-bg: rgba(255, 255, 255, 0.45);
-  --card-bg-hover: rgba(255, 255, 255, 0.85);
-  --card-border: rgba(0, 0, 0, 0.06);
+  --card-bg: #ffffff;
+  --card-bg-hover: #f1f5f9;
+  --card-border: #cbd5e1;
 
   --slate-950: #ffffff;
   --slate-900: #f8fafc;
@@ -27,37 +26,36 @@
   --slate-300: #475569;
   --slate-100: #1e293b;
   
-  --indigo-950: #e0e7ff;
-  --indigo-900: #c7d2fe;
-  --indigo-800: #a5b4fc;
-  --indigo-700: #818cf8;
-  --indigo-600: #4f46e5;
-  --indigo-400: #6366f1;
-  --indigo-300: #818cf8;
+  --indigo-950: #f0fdfa; /* Clean Light Teal */
+  --indigo-900: #ccfbf1;
+  --indigo-800: #99f6e4;
+  --indigo-700: #5eead4;
+  --indigo-600: #0d9488; /* Standard Primary Teal */
+  --indigo-400: #14b8a6;
+  --indigo-300: #2dd4bf;
   
-  --white: #1e293b;
+  --white: #0f172a;
 
-  --ai-bubble: rgba(241, 245, 249, 0.8);
-  --accent-glow: rgba(99, 102, 241, 0.05);
+  --ai-bubble: #f1f5f9;
+  --accent-glow: rgba(13, 148, 136, 0.02);
 }
 
 .dark {
-  /* Dark Mode Variables */
-  --bg-color: #080d1a;
-  --bg-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 450px),
-              radial-gradient(circle at bottom left, rgba(239, 68, 68, 0.05), transparent 450px);
-  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-  --text-primary: #cbd5e1;
+  /* Dark Mode Variables - Sleek, Flat Slate Theme */
+  --bg-color: #0b0f19;
+  --bg-image: none;
+  --bg-gradient: #0b0f19;
+  --text-primary: #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   
-  --panel-bg: rgba(17, 24, 39, 0.7);
-  --panel-border: rgba(255, 255, 255, 0.04);
-  --panel-shadow: 0 10px 45px rgba(0, 0, 0, 0.55);
+  --panel-bg: #111827;
+  --panel-border: #1f2937;
+  --panel-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
   
-  --card-bg: rgba(31, 41, 55, 0.35);
-  --card-bg-hover: rgba(31, 41, 55, 0.55);
-  --card-border: rgba(255, 255, 255, 0.03);
+  --card-bg: #1e293b;
+  --card-bg-hover: #334155;
+  --card-border: #334155;
 
   --slate-950: #020617;
   --slate-900: #0f172a;
@@ -69,23 +67,22 @@
   --slate-300: #cbd5e1;
   --slate-100: #f1f5f9;
   
-  --indigo-950: #090d1f;
-  --indigo-900: #1e1b4b;
-  --indigo-800: #312e81;
-  --indigo-700: #4338ca;
-  --indigo-600: #4f46e5;
-  --indigo-400: #818cf8;
-  --indigo-300: #a5b4fc;
+  --indigo-950: #042f2e;
+  --indigo-900: #115e59;
+  --indigo-800: #134e4a;
+  --indigo-700: #0f766e;
+  --indigo-600: #0d9488;
+  --indigo-400: #14b8a6;
+  --indigo-300: #2dd4bf;
   
   --white: #ffffff;
 
-  --ai-bubble: rgba(51, 65, 85, 0.5);
-  --accent-glow: rgba(99, 102, 241, 0.15);
+  --ai-bubble: #1e293b;
+  --accent-glow: rgba(20, 184, 166, 0.05);
 }
 
 /* Force body styling overrides */
 body {
-  background: var(--bg-gradient, var(--bg-image)) !important;
   background-color: var(--bg-color) !important;
   color: var(--text-primary) !important;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -194,16 +191,16 @@ h1, h2, h3, h4,
 .font-black, 
 .font-extrabold {
   font-family: 'Plus Jakarta Sans', 'Outfit', 'Space Grotesk', sans-serif !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.025em !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
 }
 
 /* Labels, upper-case tags, and metadata elements styling */
 label, 
 .uppercase.tracking-widest,
 .header-font {
-  letter-spacing: 0.08em !important;
-  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 600 !important;
   text-transform: uppercase !important;
 }
 
@@ -460,9 +457,10 @@ input[type="file"]:hover::file-selector-button {
 }
 
 .biomarker-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
-  border-color: rgba(20, 184, 166, 0.3);
+  border-color: var(--indigo-400);
+  background: var(--slate-800);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px -10px rgba(13, 148, 136, 0.15);
 }
 
 .biomarker-badge {
@@ -487,10 +485,98 @@ input[type="file"]:hover::file-selector-button {
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
+.biomarker-badge.high,
 .badge-high {
   background: rgba(239, 68, 68, 0.15);
   color: #f87171;
   border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.biomarker-badge.low {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+/* Range Visualizer Track */
+.biomarker-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--slate-700);
+  position: relative;
+  margin: 0.6rem 0 0.4rem 0;
+}
+
+.biomarker-range-bar {
+  position: absolute;
+  height: 100%;
+  background: #10b981;
+  opacity: 0.2;
+  border-radius: 4px;
+}
+
+.biomarker-value-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--panel-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: left 0.3s ease;
+}
+
+.biomarker-value-indicator.normal {
+  background: #10b981;
+}
+
+.biomarker-value-indicator.high,
+.biomarker-value-indicator.elevated {
+  background: #f59e0b;
+}
+
+.biomarker-value-indicator.low {
+  background: #38bdf8;
+}
+
+/* Category Filters */
+.biomarker-categories {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.6rem;
+  margin-bottom: 1rem;
+  scrollbar-width: none; /* Firefox */
+}
+
+.biomarker-categories::-webkit-scrollbar {
+  display: none; /* Safari/Chrome */
+}
+
+.biomarker-cat-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--slate-800);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.biomarker-cat-pill:hover {
+  border-color: var(--indigo-400);
+  color: var(--text-primary);
+}
+
+.biomarker-cat-pill.active {
+  background: var(--indigo-600);
+  color: white !important;
+  border-color: var(--indigo-600);
+  box-shadow: 0 4px 10px rgba(13, 148, 136, 0.25);
 }
 
 /* Multi-Language Selector Pills */
@@ -522,19 +608,18 @@ input[type="file"]:hover::file-selector-button {
 
 /* Drag and drop upload zone */
 .dropzone {
-  border: 2px dashed rgba(20, 184, 166, 0.35);
-  border-radius: 16px;
-  padding: 2rem 1.5rem;
+  border: 2.5px dashed var(--indigo-600);
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
   text-align: center;
   cursor: pointer;
-  background: rgba(15, 23, 42, 0.3);
-  transition: all 0.25s ease;
+  background: var(--slate-900);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .dropzone:hover, .dropzone.dragover {
-  border-color: #14b8a6;
-  background: rgba(20, 184, 166, 0.1);
-  transform: scale(1.01);
+  border-color: var(--indigo-400);
+  background: var(--slate-800);
 }
 
 /* AI Chat Typing Indicator */
@@ -583,4 +668,25 @@ html:not(.dark) #files-search {
   background: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
+}
+
+/* Date selector dropdown items style */
+.biomarker-date-item {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.biomarker-date-item:hover {
+  background: var(--card-bg-hover);
+  color: var(--indigo-600);
+}
+
+.biomarker-date-item.active {
+  color: var(--indigo-600);
+  background: var(--card-bg-hover);
 }

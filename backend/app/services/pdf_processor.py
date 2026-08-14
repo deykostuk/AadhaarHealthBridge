@@ -134,22 +134,68 @@ class LocalPDFProcessor:
 
     @staticmethod
     def extract_observed_date(text: str) -> datetime.datetime:
-        """Parses report observation date from clinical text."""
-        date_patterns = [
-            r"report date[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})",
-            r"date of collection[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})",
-            r"date[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})"
+        """Parses report observation date from clinical text with support for obfuscated PUA fonts and text months."""
+        # Clean PUA obfuscated characters
+        chars = []
+        for char in text or "":
+            o = ord(char)
+            if 0xf000 <= o <= 0xf0ff:
+                chars.append(chr(o - 0xf000))
+            else:
+                chars.append(char)
+        clean_text = "".join(chars)
+
+        # Regex for various date formats (e.g. 20-Feb-2023, 23/7/2024, 2023-02-20)
+        date_regex = r"\b(?:\d{1,2}[ \/\-.]+(?:\d{1,2}|[a-zA-Z]{3,9})[ \/\-.]+\d{2,4}|\d{4}-\d{1,2}-\d{1,2}|[a-zA-Z]{3,9}\s+\d{1,2},\s*\d{4})\b"
+        
+        formats = [
+            "%d-%b-%Y", "%d %b %Y", "%d/%b/%Y",
+            "%d-%B-%Y", "%d %B %Y", "%d/%B/%Y",
+            "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y",
+            "%Y-%m-%d", "%m/%d/%Y",
+            "%b %d, %Y", "%B %d, %Y",
+            "%d-%b-%y", "%d %b %y", "%d/%b/%y",
+            "%d/%m/%y", "%d-%m-%y"
         ]
-        for pat in date_patterns:
-            m = re.search(pat, text, re.I)
-            if m:
-                date_str = m.group(1)
-                for fmt in ["%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y", "%Y-%m-%d", "%m/%d/%Y"]:
-                    try:
-                        return datetime.datetime.strptime(date_str, fmt)
-                    except ValueError:
-                        continue
-        return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        
+        found_dates = []
+        for m in re.finditer(date_regex, clean_text, re.I):
+            date_str = m.group(0).strip()
+            # Clean up duplicate whitespace
+            date_str = re.sub(r"\s+", " ", date_str)
+            for fmt in formats:
+                try:
+                    parsed_dt = datetime.datetime.strptime(date_str, fmt)
+                    found_dates.append((m.start(), parsed_dt))
+                    break
+                except ValueError:
+                    continue
+
+        if not found_dates:
+            return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+        # Prioritize dates that appear close to key clinical report words
+        keywords = ["collected", "reported", "approved", "received", "date of", "report date"]
+        scored_dates = []
+        for pos, d in found_dates:
+            # Skip DOBs and future bounds
+            if d.year < 2010 or d.year > 2030:
+                continue
+            context = clean_text[max(0, pos - 100):min(len(clean_text), pos + 100)].lower()
+            score = sum(1 for kw in keywords if kw in context)
+            scored_dates.append((score, d))
+
+        if scored_dates:
+            # Sort by score descending, then by date descending (latest preferred)
+            scored_dates.sort(key=lambda x: (x[0], x[1]), reverse=True)
+            return scored_dates[0][1]
+
+        # Fallback to first parsed date with year in normal range
+        normal_dates = [d for pos, d in found_dates if 2010 <= d.year <= 2030]
+        if normal_dates:
+            return normal_dates[0]
+
+        return found_dates[0][1]
 
     @classmethod
     def extract_clinical_biomarkers(cls, text: str) -> List[Dict[str, Any]]:

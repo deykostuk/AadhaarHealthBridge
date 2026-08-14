@@ -24,19 +24,19 @@
       "nav.install": "Install App",
       "nav.overview": "Overview & Vitals",
       "nav.biomarkers": "Lab Biomarkers",
-      "nav.documents": "Upload Records",
-      "nav.files": "Medical Files & Reports",
+      "nav.documents": "Medical Records & Files",
       "nav.chat": "Local RAG AI",
       "nav.audit": "Audit Trail",
       "nav.emergency": "Emergency QR",
       "nav.logout": "Logout",
+      "profile.language": "Language",
       "files.title": "Patient Medical Files & PDF Vault",
       "files.subtitle": "View, preview, and share laboratory reports and prescriptions instantly",
       "files.search_placeholder": "🔍 Search files by name or category...",
       "files.open_pdf": "Open PDF",
       "files.share_whatsapp": "Share on WhatsApp",
       "files.download": "Download",
-      "files.empty": "No PDF reports found in this vault. Upload a document to view and share.",
+      "files.empty": "No files found in this vault. Upload a document to view and share.",
       "files.preview_title": "Medical Report Preview",
       "files.open_new_tab": "Open in New Tab",
       "auth.title": "Access Digital Vault",
@@ -77,14 +77,14 @@
       "biomarkers.subtitle": "HL7 FHIR Observation Records Extracted from PDF Reports",
       "biomarkers.search_placeholder": "🔍 Search biomarkers (e.g. Glucose)...",
       "biomarkers.empty": "No health metrics extracted yet. Upload a lab report PDF.",
-      "documents.title": "Medical Record Ingestion",
-      "documents.subtitle": "Secure Zero-Egress Local PDF Parsing & Vector Indexing",
-      "documents.drag_drop": "Drag and drop medical PDF reports here",
-      "documents.click_browse": "or click to browse from your device",
-      "documents.category": "Document Category",
-      "documents.upload_btn": "Process & Index Document",
-      "documents.uploaded_records": "Uploaded Medical Records",
-      "documents.empty": "No medical documents uploaded yet.",
+      "documents.title": "Upload Medical Records",
+      "documents.subtitle": "Add lab reports, prescriptions, or files to your secure offline vault",
+      "documents.drag_drop": "Drag and drop medical PDFs or files here",
+      "documents.click_browse": "or select files from your device",
+      "documents.category": "File Type",
+      "documents.upload_btn": "Upload & Save",
+      "documents.uploaded_records": "My Saved Records",
+      "documents.empty": "No documents uploaded yet.",
       "chat.title": "Privacy-First AI Clinical Assistant",
       "chat.subtitle": "Runs locally on device with Ollama & Prompt Injection Guardrails",
       "chat.clear": "Clear Chat",
@@ -150,19 +150,19 @@
       "nav.install": "ऐप इंस्टॉल करें",
       "nav.overview": "अवलोकन एवं महत्वपूर्ण संकेत",
       "nav.biomarkers": "लैब बायोमार्कर",
-      "nav.documents": "दस्तावेज अपलोड",
-      "nav.files": "चिकित्सा फ़ाइलें एवं रिपोर्ट",
+      "nav.documents": "चिकित्सा रिकॉर्ड और फाइलें",
       "nav.chat": "लोकल RAG एआई",
       "nav.audit": "ऑडिट ट्रेल",
       "nav.emergency": "आपातकालीन क्यूआर",
       "nav.logout": "लॉग-आउट",
+      "profile.language": "भाषा",
       "files.title": "रोगी चिकित्सा फ़ाइलें एवं पीडीएफ वॉल्ट",
       "files.subtitle": "लैब रिपोर्ट और नुस्खे तुरंत देखें, पूर्वावलोकन करें और साझा करें",
       "files.search_placeholder": "🔍 नाम या श्रेणी के अनुसार फ़ाइलें खोजें...",
       "files.open_pdf": "पीडीएफ खोलें",
       "files.share_whatsapp": "व्हाट्सएप पर साझा करें",
       "files.download": "डाउनलोड",
-      "files.empty": "इस वॉल्ट में कोई पीडीएफ रिपोर्ट नहीं मिली। देखने और साझा करने के लिए दस्तावेज अपलोड करें।",
+      "files.empty": "इस वॉल्ट में कोई फ़ाइल नहीं मिली। देखने और साझा करने के लिए एक दस्तावेज़ अपलोड करें।",
       "files.preview_title": "चिकित्सा रिपोर्ट पूर्वावलोकन",
       "files.open_new_tab": "नए टैब में खोलें",
       "auth.title": "डिजिटल वॉल्ट में प्रवेश करें",
@@ -203,14 +203,14 @@
       "biomarkers.subtitle": "पीडीएफ रिपोर्ट से निकाले गए HL7 FHIR अवलोकन रिकॉर्ड",
       "biomarkers.search_placeholder": "🔍 बायोमार्कर खोजें (जैसे: ग्लूकोज)...",
       "biomarkers.empty": "अभी तक कोई स्वास्थ्य मीट्रिक नहीं निकाली गई है। लैब रिपोर्ट पीडीएफ अपलोड करें।",
-      "documents.title": "चिकित्सा दस्तावेज अंतर्ग्रहण",
-      "documents.subtitle": "सुरक्षित स्थानीय पीडीएफ पार्सिंग एवं वेक्टर इंडेक्सिंग",
-      "documents.drag_drop": "चिकित्सा रिपोर्ट पीडीएफ यहाँ खींचें और छोड़ें",
-      "documents.click_browse": "या अपने डिवाइस से ब्राउज़ करने के लिए क्लिक करें",
-      "documents.category": "दस्तावेज श्रेणी",
-      "documents.upload_btn": "दस्तावेज प्रोसेस एवं इंडेक्स करें",
-      "documents.uploaded_records": "अपलोड किए गए चिकित्सा रिकॉर्ड",
-      "documents.empty": "अभी तक कोई चिकित्सा दस्तावेज अपलोड नहीं किया गया है।",
+      "documents.title": "चिकित्सा दस्तावेज अपलोड करें",
+      "documents.subtitle": "अपने सुरक्षित ऑफलाइन वॉल्ट में लैब रिपोर्ट, पर्चे या फाइलें जोड़ें",
+      "documents.drag_drop": "मेडिकल पीडीएफ या फाइलें यहां लाएं",
+      "documents.click_browse": "या अपने डिवाइस से फाइलें चुनें",
+      "documents.category": "फाइल का प्रकार",
+      "documents.upload_btn": "अपलोड करें और सहेजें",
+      "documents.uploaded_records": "मेरे सहेजे गए रिकॉर्ड",
+      "documents.empty": "कोई दस्तावेज अपलोड नहीं किया गया है।",
       "chat.title": "गोपनीयता-प्रथम एआई नैदानिक सहायक",
       "chat.subtitle": "ओलामा और प्रॉम्प्ट इंजेक्शन सुरक्षा के साथ डिवाइस पर स्थानीय रूप से चलता है",
       "chat.clear": "चैट साफ़ करें",
@@ -276,11 +276,12 @@
       "nav.install": "অ্যাপ ইনস্টল করুন",
       "nav.overview": "ওভারভিউ এবং গুরুত্বপূর্ণ লক্ষণ",
       "nav.biomarkers": "ল্যাব বায়োমার্কার",
-      "nav.documents": "চিকিৎসা সংক্রান্ত নথি",
+      "nav.documents": "চিকিৎসা রেকর্ড ও ফাইল",
       "nav.chat": "লোকাল RAG এআই",
       "nav.audit": "অডিট ট্রেইল",
       "nav.emergency": "জরুরী কিউআর",
       "nav.logout": "লগ আউট",
+      "profile.language": "ভাষা",
       "auth.title": "ডিজিটাল ভল্ট খুলুন",
       "auth.subtitle": "OAuth 2.0 / Argon2id সুরক্ষিত শংসাপত্র দিয়ে প্রমাণীকরণ করুন।",
       "auth.username": "ব্যবহারকারীর নাম বা আভা আইডি",
@@ -319,14 +320,14 @@
       "biomarkers.subtitle": "পিডিএফ রিপোর্ট থেকে সংগৃহীত HL7 FHIR পর্যবেক্ষণ রেকর্ড",
       "biomarkers.search_placeholder": "🔍 বায়োমার্কার খুঁজুন (যেমন: গ্লুকোজ)...",
       "biomarkers.empty": "এখনও কোনও স্বাস্থ্য মেট্রিক নিষ্কাশন করা হয়নি। একটি ল্যাব রিপোর্ট পিডিএফ আপলোড করুন।",
-      "documents.title": "চিকিৎসা সংক্রান্ত নথি গ্রহণ",
-      "documents.subtitle": "নিরাপদ জিরো-ইগ্রেস লোকাল পিডিএফ বিশ্লেষণ ও ভেক্টর ইনডেক্সিং",
-      "documents.drag_drop": "চিকিৎসা সংক্রান্ত রিপোর্ট পিডিএফ এখানে ড্র্যাগ এবং ড্রপ করুন",
-      "documents.click_browse": "অথবা আপনার ডিভাইস থেকে ব্রাউজ করতে ক্লিক করুন",
-      "documents.category": "নথির বিভাগ",
-      "documents.upload_btn": "নথি প্রক্রিয়া ও ইনডেক্স করুন",
-      "documents.uploaded_records": "আপলোড করা চিকিৎসা রেকর্ড",
-      "documents.empty": "এখনও কোনও চিকিৎসা সংক্রান্ত নথি আপলোড করা হয়নি।",
+      "documents.title": "মেডিকেল রেকর্ড আপলোড করুন",
+      "documents.subtitle": "আপনার নিরাপদ অফলাইন ভল্টে ল্যাব রিপোর্ট, প্রেসক্রিপশন বা ফাইল যোগ করুন",
+      "documents.drag_drop": "মেডিকেল পিডিএফ বা ফাইল এখানে এনে রাখুন",
+      "documents.click_browse": "অথবা আপনার ডিভাইস থেকে ফাইল নির্বাচন করুন",
+      "documents.category": "ফাইলের ধরণ",
+      "documents.upload_btn": "আপলোড এবং সংরক্ষণ করুন",
+      "documents.uploaded_records": "আমার সংরক্ষিত রেকর্ড",
+      "documents.empty": "কোনো মেডিকেল রেকর্ড আপলোড করা হয়নি।",
       "chat.title": "গোপনীয়তা-প্রথম এআই ক্লিনিকাল সহকারী",
       "chat.subtitle": "ওলামা এবং প্রম্পট ইনজেকশন সুরক্ষার সাথে ডিভাইসে স্থানীয়ভাবে চলে",
       "chat.clear": "চ্যাট মুছে ফেলুন",
@@ -392,11 +393,12 @@
       "nav.install": "செயலியை நிறுவு",
       "nav.overview": "கண்ணோட்டம் & முக்கிய அறிகுறிகள்",
       "nav.biomarkers": "ஆய்வக பயோமார்க்ஸ்",
-      "nav.documents": "மருத்துவ ஆவணங்கள்",
+      "nav.documents": "மருத்துவ பதிவுகள் & கோப்புகள்",
       "nav.chat": "உள்ளூர் RAG AI",
       "nav.audit": "தணிக்கை பதிவு",
       "nav.emergency": "அவசர QR",
       "nav.logout": "வெளியேறு",
+      "profile.language": "மொழி",
       "auth.title": "டிஜிட்டல் பெட்டகத்தை அணுகவும்",
       "auth.subtitle": "OAuth 2.0 / Argon2id பாதுகாப்பான சான்றுகளுடன் அங்கீகரிக்கவும்.",
       "auth.username": "பயனர் பெயர் அல்லது ABHA ID",
@@ -435,14 +437,14 @@
       "biomarkers.subtitle": "PDF அறிக்கையிலிருந்து பெறப்பட்ட HL7 FHIR அவதானிப்புகள்",
       "biomarkers.search_placeholder": "🔍 பயோமார்க்ஸ் தேடுங்கள் (எ.கா. குளுக்கோஸ்)...",
       "biomarkers.empty": "இன்னும் சுகாதார அளவீடுகள் இல்லை. PDF பதிவேற்றவும்.",
-      "documents.title": "மருத்துவ ஆவண பதிவேற்றம்",
-      "documents.subtitle": "பாதுகாப்பான உள்ளூர் PDF பகுப்பாய்வு",
-      "documents.drag_drop": "மருத்துவ அறிக்கைகளை இங்கே இழுத்து விடவும்",
-      "documents.click_browse": "அல்லது உலாவ கிளிக் செய்யவும்",
-      "documents.category": "ஆவண வகை",
-      "documents.upload_btn": "ஆவணத்தை செயலாக்கு & அட்டவணைப்படுத்து",
-      "documents.uploaded_records": "பதிவேற்றப்பட்ட மருத்துவ ஆவணங்கள்",
-      "documents.empty": "இன்னும் ஆவணங்கள் பதிவேற்றப்படவில்லை.",
+      "documents.title": "மருத்துவ ஆவணங்களைப் பதிவேற்றவும்",
+      "documents.subtitle": "உள்ளூர் பெட்டகத்தில் ஆய்வக அறிக்கைகள் அல்லது கோப்புகளைச் சேர்க்கவும்",
+      "documents.drag_drop": "மருத்துவ PDF அல்லது கோப்புகளை இங்கே இழுத்துப் போடவும்",
+      "documents.click_browse": "அல்லது உங்கள் சாதனத்திலிருந்து கோப்புகளைத் தேர்ந்தெடுக்கவும்",
+      "documents.category": "கோப்பு வகை",
+      "documents.upload_btn": "பதிவேற்றி சேமிக்கவும்",
+      "documents.uploaded_records": "எனது சேமிக்கப்பட்ட பதிவுகள்",
+      "documents.empty": "ஆவணங்கள் எதுவும் பதிவேற்றப்படவில்லை.",
       "chat.title": "AI மருத்துவ உதவியாளர்",
       "chat.subtitle": "சாதனத்திலேயே இயங்கும் உள்ளூர் AI உதவியாளர்",
       "chat.clear": "அரட்டையை அழிக்கவும்",
@@ -508,11 +510,12 @@
       "nav.install": "యాప్ ఇన్‌స్టాల్ చేయండి",
       "nav.overview": "సమీక్ష & ముఖ్య సంకేతాలు",
       "nav.biomarkers": "ల్యాబ్ బయోమార్కర్లు",
-      "nav.documents": "వైద్య పత్రాలు",
+      "nav.documents": "వైద్య రికార్డులు & ఫైళ్లు",
       "nav.chat": "లోకల్ RAG AI",
       "nav.audit": "ఆడిట్ లాగ్స్",
       "nav.emergency": "ఎమర్జెన్సీ QR",
       "nav.logout": "లాగౌట్",
+      "profile.language": "భాష",
       "auth.title": "డిజిటల్ వాల్ట్ తెరవండి",
       "auth.subtitle": "OAuth 2.0 / Argon2id సురక్షిత ఆధారాలతో ప్రామాణీకరించండి.",
       "auth.username": "వినియోగదారు పేరు లేదా ABHA ID",
@@ -551,14 +554,14 @@
       "biomarkers.subtitle": "PDF నివేదికల నుండి HL7 FHIR పరిశీలనలు",
       "biomarkers.search_placeholder": "🔍 బయోమార్కర్లను శోధించండి (ఉదా. గ్లూకోజ్)...",
       "biomarkers.empty": "ఇంకా ఆరోగ్య కొలతలు లేవు. ల్యాబ్ రిపోర్ట్ PDF ని అప్‌లోడ్ చేయండి.",
-      "documents.title": "వైద్య పత్రాల స్వీకరణ",
-      "documents.subtitle": "సురక్షిత లోకల్ PDF విశ్లేషణ",
-      "documents.drag_drop": "వైద్య నివేదికల PDF ని ఇక్కడ డ్రాగ్ చేయండి",
-      "documents.click_browse": "లేదా బ్రౌజ్ చేయడానికి క్లిక్ చేయండి",
-      "documents.category": "పత్రం వర్గం",
-      "documents.upload_btn": "పత్రాన్ని ప్రాసెస్ చేయండి",
-      "documents.uploaded_records": "అప్‌లోడ్ చేసిన వైద్య రికార్డులు",
-      "documents.empty": "ఇంకా పత్రాలు అప్‌లోడ్ కాలేదు.",
+      "documents.title": "వైద్య రికార్డులను అప్‌లోడ్ చేయండి",
+      "documents.subtitle": "మీ సురక్షిత ఆఫ్‌లైన్ వాల్ట్‌లో ల్యాబ్ నివేదికలు లేదా ఫైల్‌లను జోడించండి",
+      "documents.drag_drop": "మెడికల్ పిడిఎఫ్ లేదా ఫైళ్లను ఇక్కడ డ్రాప్ చేయండి",
+      "documents.click_browse": "లేదా మీ పరికరం నుండి ఫైళ్లను ఎంచుకోండి",
+      "documents.category": "ఫైల్ రకం",
+      "documents.upload_btn": "అప్‌లోడ్ చేసి సేవ్ చేయి",
+      "documents.uploaded_records": "నా సేవ్ చేయబడిన రికార్డులు",
+      "documents.empty": "ఎటువంటి రికార్డులు అప్‌లోడ్ కావలెను.",
       "chat.title": "AI క్లినికల్ అసిస్టెంట్",
       "chat.subtitle": "డివైస్‌పై సురక్షితంగా పనిచేసే AI అసిస్టెంట్",
       "chat.clear": "చాట్ క్లియర్ చేయండి",
@@ -624,11 +627,12 @@
       "nav.install": "अॅप स्थापित करा",
       "nav.overview": "आढावा आणि महत्त्वाची लक्षणे",
       "nav.biomarkers": "लॅब बायोमार्कर्स",
-      "nav.documents": "वैद्यकीय कागदपत्रे",
+      "nav.documents": "वैद्यकीय रेकॉर्ड आणि फायली",
       "nav.chat": "स्थानिक RAG AI",
       "nav.audit": "ऑडिट ट्रेल",
       "nav.emergency": "आपत्कालीन QR",
       "nav.logout": "लॉग-आउट",
+      "profile.language": "भाषा",
       "auth.title": "डिजिटल व्हॉल्टमध्ये प्रवेश करा",
       "auth.subtitle": "OAuth 2.0 / Argon2id सुरक्षित क्रेडेन्शियल्ससह प्रमाणीकृत करा.",
       "auth.username": "वापरकर्तानाव किंवा आभा आयडी",
@@ -667,13 +671,13 @@
       "biomarkers.subtitle": "PDF अहवालांमधून काढलेले HL7 FHIR निरीक्षण रेकॉर्ड",
       "biomarkers.search_placeholder": "🔍 बायोमार्कर्स शोधा (उदा. ग्लुकोज)...",
       "biomarkers.empty": "अद्याप कोणतेही आरोग्य मेट्रिक्स काढले नाहीत. लॅब रिपोर्ट PDF अपलोड करा.",
-      "documents.title": "वैद्यकीय कागदपत्रे अंतर्ग्रहण",
-      "documents.subtitle": "सुरक्षित स्थानिक PDF विश्लेषण आणि वेक्टर अनुक्रमणिका",
-      "documents.drag_drop": "वैद्यकीय अहवाल PDF येथे ड्रॅग आणि ड्रॉप करा",
-      "documents.click_browse": "किंवा ब्राउझ करण्यासाठी क्लिक करा",
-      "documents.category": "कागदपत्र श्रेणी",
-      "documents.upload_btn": "कागदपत्र प्रक्रिया आणि अनुक्रमित करा",
-      "documents.uploaded_records": "अपलोड केलेले वैद्यकीय रेकॉर्ड",
+      "documents.title": "वैद्यकीय रेकॉर्ड अपलोड करा",
+      "documents.subtitle": "तुमच्या सुरक्षित ऑफलाइन व्हॉल्टमध्ये लॅब रिपोर्ट्स किंवा फाइल्स जोडा",
+      "documents.drag_drop": "वैद्यकीय पीडीएफ किंवा फाइल्स येथे आणून सोडा",
+      "documents.click_browse": "किंवा तुमच्या डिव्हाइसवरून फाइल्स निवडा",
+      "documents.category": "फाइलचा प्रकार",
+      "documents.upload_btn": "अपलोड करा आणि जतन करा",
+      "documents.uploaded_records": "माझे जतन केलेले रेकॉर्ड",
       "documents.empty": "अद्याप कोणतीही कागदपत्रे अपलोड केलेली नाहीत.",
       "chat.title": "गोपनीयता-प्रथम AI क्लिनिकल सहाय्यक",
       "chat.subtitle": "डिव्हाइसवर स्थानिक पातळीवर चालणारा AI सहाय्यक",
@@ -765,21 +769,14 @@
   }
 
   function updateButtonPills(activeLang) {
-    document.querySelectorAll('.ahb-lang-btn').forEach((btn) => {
-      const isSelected = btn.dataset.lang === activeLang;
-      btn.classList.toggle('active-lang', isSelected);
-      if (isSelected) {
-        btn.style.setProperty('background', '#0d9488', 'important');
-        btn.style.setProperty('color', '#ffffff', 'important');
-        btn.style.setProperty('font-weight', '800', 'important');
-        btn.style.setProperty('box-shadow', '0 2px 10px rgba(13, 148, 136, 0.6)', 'important');
-      } else {
-        btn.style.setProperty('background', 'transparent', 'important');
-        btn.style.setProperty('color', '#94a3b8', 'important');
-        btn.style.setProperty('font-weight', '700', 'important');
-        btn.style.setProperty('box-shadow', 'none', 'important');
-      }
-    });
+    const select = document.getElementById('ahb-lang-select');
+    if (select) {
+      select.value = activeLang;
+    }
+    const profileSelect = document.getElementById('profile-lang-select');
+    if (profileSelect) {
+      profileSelect.value = activeLang;
+    }
   }
 
   function setLanguage(lang) {
@@ -788,7 +785,7 @@
     localStorage.setItem('hb_lang', lang);
     document.documentElement.lang = lang;
 
-    // 1. Instantly update button highlight
+    // 1. Instantly update dropdown select value
     updateButtonPills(lang);
 
     // 2. Instantly translate entire DOM
@@ -833,42 +830,65 @@
       }
     });
 
-    // Sync button highlight
+    // Sync dropdown highlight
     updateButtonPills(currentLang);
   }
 
   function injectLanguageSelector() {
-    if (document.getElementById('ahb-lang-wrapper')) {
-      updateButtonPills(currentLang);
-      return;
-    }
+    // 1. Populate navbar language select if not already done
+    let select = document.getElementById('ahb-lang-select');
+    if (!select) {
+      select = document.createElement('select');
+      select.id = 'ahb-lang-select';
+      select.className = 'form-control';
+      // Style select to be compact, elegant and matching the UI theme
+      select.style.cssText = 'font-size: 0.8rem; font-weight: 600; padding: 0.35rem 1.8rem 0.35rem 0.6rem; border-radius: 8px; background: rgba(30, 41, 59, 0.7); color: #f8fafc; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; outline: none; margin-right: 0.5rem; transition: border-color 0.15s ease; width: auto; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2394a3b8\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 0.85em;';
 
-    const wrapper = document.createElement('div');
-    wrapper.id = 'ahb-lang-wrapper';
-    wrapper.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:3px 5px;margin-right:8px;backdrop-filter:blur(10px);box-shadow:0 4px 12px rgba(0,0,0,0.3);';
-
-    SUPPORTED_LANGUAGES.forEach((lang) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'ahb-lang-btn';
-      btn.dataset.lang = lang.code;
-      btn.title = `${lang.full} (${lang.native})`;
-      btn.style.cssText = 'padding:4px 8px;border-radius:6px;border:none;font-size:11px;font-weight:800;cursor:pointer;background:transparent;color:#94a3b8;font-family:inherit;transition:all 0.15s ease;';
-      btn.textContent = lang.label;
-
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setLanguage(lang.code);
+      SUPPORTED_LANGUAGES.forEach((lang) => {
+        const opt = document.createElement('option');
+        opt.value = lang.code;
+        opt.textContent = `${lang.native} (${lang.label})`;
+        opt.style.background = '#0f172a';
+        opt.style.color = '#f8fafc';
+        if (lang.code === currentLang) {
+          opt.selected = true;
+        }
+        select.appendChild(opt);
       });
 
-      wrapper.appendChild(btn);
-    });
+      select.addEventListener('change', (e) => {
+        setLanguage(e.target.value);
+      });
 
-    const navActions = document.querySelector('.nav-actions');
-    if (navActions) {
-      navActions.insertBefore(wrapper, navActions.firstChild);
+      const navActions = document.querySelector('.nav-actions');
+      if (navActions) {
+        navActions.insertBefore(select, navActions.firstChild);
+      }
     }
+
+    // 2. Populate profile dropdown language select if it exists
+    const profileSelect = document.getElementById('profile-lang-select');
+    if (profileSelect && profileSelect.children.length === 0) {
+      SUPPORTED_LANGUAGES.forEach((lang) => {
+        const opt = document.createElement('option');
+        opt.value = lang.code;
+        opt.textContent = `${lang.native} (${lang.label})`;
+        opt.style.background = 'var(--surface-card)';
+        opt.style.color = 'var(--text-main)';
+        if (lang.code === currentLang) {
+          opt.selected = true;
+        }
+        profileSelect.appendChild(opt);
+      });
+
+      profileSelect.addEventListener('change', (e) => {
+        setLanguage(e.target.value);
+      });
+    }
+
+    // 3. Sync values
+    if (select) select.value = currentLang;
+    if (profileSelect) profileSelect.value = currentLang;
 
     updateButtonPills(currentLang);
     applyTranslations();

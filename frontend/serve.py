@@ -19,9 +19,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 if __name__ == '__main__':
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         print(f"============================================================")
-        print(f"  🩺 Aadhaar Health Bridge - Standalone Frontend App Shell")
-        print(f"  🌐 Running locally at: http://localhost:{PORT}")
-        print(f"  🔗 Connected to Backend: http://localhost:5000/api/v1")
+        print(f"  [App] Aadhaar Health Bridge - Standalone Frontend App Shell")
+        print(f"  [URL] Running locally at: http://localhost:{PORT}")
+        print(f"  [API] Connected to Backend: http://localhost:5000/api/v1")
         print(f"============================================================")
         try:
             httpd.serve_forever()

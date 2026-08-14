@@ -20,17 +20,17 @@
 
   <style>
     :root {
-      --primary: #0d9488;
-      --primary-hover: #0f766e;
-      --primary-light: #14b8a6;
-      --primary-glow: rgba(20, 184, 166, 0.25);
-      --accent: #6366f1;
-      --bg-dark: #090d1a;
-      --surface-dark: #111827;
-      --surface-card: rgba(17, 24, 39, 0.75);
-      --border-glow: rgba(255, 255, 255, 0.08);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
+      --primary: var(--indigo-600, #0d9488);
+      --primary-hover: var(--indigo-700, #0f766e);
+      --primary-light: var(--indigo-400, #14b8a6);
+      --primary-glow: rgba(13, 148, 136, 0.12);
+      --accent: #0ea5e9;
+      --bg-dark: var(--bg-color, #0b0f19);
+      --surface-dark: var(--panel-bg, #ffffff);
+      --surface-card: var(--panel-bg, #ffffff);
+      --border-glow: var(--panel-border, #cbd5e1);
+      --text-main: var(--text-primary, #0f172a);
+      --text-muted: var(--text-muted, #64748b);
     }
 
     * {
@@ -41,7 +41,7 @@
     }
 
     body {
-      background: radial-gradient(circle at 15% 15%, #0f172a 0%, #080d1a 90%);
+      background-color: var(--bg-dark) !important;
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
@@ -54,40 +54,38 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.85rem 1.75rem;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      padding: 0.75rem 1.5rem;
+      background: var(--surface-card);
       border-bottom: 1px solid var(--border-glow);
       position: sticky;
       top: 0;
       z-index: 1000;
+      box-shadow: var(--panel-shadow, 0 1px 3px rgba(0, 0, 0, 0.05));
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 0.65rem;
-      font-size: 1.2rem;
-      font-weight: 800;
+      gap: 0.5rem;
+      font-size: 1.15rem;
+      font-weight: 700;
       color: var(--text-main);
       text-decoration: none;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.015em;
     }
 
     .brand-icon {
-      font-size: 1.5rem;
-      filter: drop-shadow(0 0 8px var(--primary-glow));
+      font-size: 1.35rem;
     }
 
     .brand-badge {
-      background: linear-gradient(135deg, var(--primary), #06b6d4);
-      color: white;
-      padding: 0.2rem 0.55rem;
+      background: var(--primary);
+      color: white !important;
+      padding: 0.15rem 0.45rem;
       border-radius: 6px;
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.04em;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
     }
 
     .nav-actions {
@@ -98,62 +96,58 @@
 
     /* Buttons */
     .btn {
-      padding: 0.5rem 1rem;
-      border-radius: 10px;
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
       border: 1px solid var(--border-glow);
       background: var(--surface-card);
       color: var(--text-main);
       cursor: pointer;
       font-weight: 600;
-      font-size: 0.875rem;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.85rem;
+      transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
+      gap: 0.4rem;
       outline: none;
     }
 
     .btn:hover {
-      background: var(--primary-hover);
-      border-color: var(--primary-light);
-      box-shadow: 0 0 16px var(--primary-glow);
-      transform: translateY(-1px);
+      background: var(--slate-800, #f1f5f9);
+      border-color: var(--slate-600, #cbd5e1);
     }
 
     .btn:active {
-      transform: translateY(0);
+      transform: scale(0.98);
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--primary), #06b6d4);
-      border: none;
-      color: white;
-      box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+      background: var(--primary);
+      border: 1px solid var(--primary);
+      color: white !important;
     }
 
     .btn-primary:hover {
-      background: linear-gradient(135deg, var(--primary-hover), #0891b2);
-      box-shadow: 0 6px 20px rgba(13, 148, 136, 0.5);
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
     }
 
     .btn-danger {
-      background: rgba(225, 29, 72, 0.15);
-      border: 1px solid rgba(225, 29, 72, 0.3);
-      color: #fb7185;
+      background: rgba(225, 29, 72, 0.08);
+      border: 1px solid rgba(225, 29, 72, 0.2);
+      color: #e11d48 !important;
     }
 
     .btn-danger:hover {
       background: #e11d48;
-      color: white;
+      color: white !important;
       border-color: #e11d48;
-      box-shadow: 0 0 15px rgba(225, 29, 72, 0.4);
     }
 
     .btn-sm {
-      padding: 0.35rem 0.75rem;
-      font-size: 0.8rem;
-      border-radius: 8px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.78rem;
+      border-radius: 6px;
     }
 
     /* Auth View */
@@ -167,155 +161,409 @@
 
     .auth-card {
       background: var(--surface-card);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
       border: 1px solid var(--border-glow);
-      border-radius: 20px;
-      padding: 2.5rem;
+      border-radius: 12px;
+      padding: 2.25rem;
       width: 100%;
-      max-width: 440px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+      max-width: 420px;
+      box-shadow: var(--panel-shadow, 0 4px 6px -1px rgba(0, 0, 0, 0.05));
       position: relative;
       overflow: hidden;
     }
 
-    .auth-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--primary), #06b6d4, var(--accent));
-    }
-
     .auth-tabs {
       display: flex;
-      gap: 0.5rem;
+      gap: 0.25rem;
       margin-bottom: 1.5rem;
-      background: rgba(15, 23, 42, 0.6);
-      padding: 4px;
-      border-radius: 10px;
+      background: var(--slate-900, #f8fafc);
+      padding: 3px;
+      border-radius: 8px;
       border: 1px solid var(--border-glow);
     }
 
     .auth-tab-btn {
       flex: 1;
-      padding: 0.5rem;
+      padding: 0.45rem;
       border: none;
       background: transparent;
       color: var(--text-muted);
-      font-weight: 700;
-      font-size: 0.85rem;
-      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      border-radius: 6px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
 
     .auth-tab-btn.active {
       background: var(--primary);
-      color: white;
-      box-shadow: 0 2px 8px var(--primary-glow);
+      color: white !important;
     }
 
     .form-group {
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.15rem;
     }
 
     .form-group label {
       display: block;
-      margin-bottom: 0.45rem;
-      font-size: 0.82rem;
-      font-weight: 700;
+      margin-bottom: 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
     }
 
     .form-control {
       width: 100%;
-      padding: 0.75rem 1rem;
-      border-radius: 10px;
+      padding: 0.55rem 0.85rem;
+      border-radius: 8px;
       border: 1px solid var(--border-glow);
-      background: rgba(15, 23, 42, 0.7);
-      color: white;
+      background: var(--slate-900, #f8fafc);
+      color: var(--text-main);
       outline: none;
-      font-size: 0.95rem;
-      transition: all 0.2s ease;
+      font-size: 0.9rem;
+      transition: border-color 0.15s ease;
     }
 
     .form-control:focus {
-      border-color: var(--primary-light);
-      box-shadow: 0 0 0 3px var(--primary-glow);
+      border-color: var(--primary);
     }
 
     /* Main App Layout */
     .app-layout {
       display: grid;
-      grid-template-columns: 280px 1fr;
+      grid-template-columns: 260px 1fr;
       flex: 1;
-      min-height: calc(100vh - 65px);
+      min-height: calc(100vh - 58px);
     }
 
     .sidebar {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: var(--surface-dark);
       border-right: 1px solid var(--border-glow);
-      padding: 1.5rem 1rem;
+      padding: 1.25rem 0.85rem;
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 0.5rem;
     }
 
     .patient-switcher-box {
-      background: rgba(30, 41, 59, 0.6);
-      border: 1px solid var(--border-glow);
-      border-radius: 14px;
+      background: linear-gradient(135deg, var(--indigo-950), rgba(13, 148, 136, 0.05));
+      border: 1px solid rgba(13, 148, 136, 0.2);
+      border-radius: 12px;
       padding: 0.9rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0.9rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    }
+
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
+    }
+
+    .custom-dropdown-trigger {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid rgba(13, 148, 136, 0.2);
+      border-radius: 8px;
+      background: var(--surface-card) !important;
+      color: var(--text-main) !important;
+      cursor: pointer;
+      text-align: left;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .custom-dropdown-trigger:focus {
+      border-color: var(--primary);
+    }
+
+    .custom-dropdown-arrow {
+      font-size: 0.65rem;
+      color: var(--primary);
+      transition: transform 0.15s ease;
+    }
+
+    .custom-dropdown.open .custom-dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .custom-dropdown-options-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 1010;
+      background: var(--surface-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 8px;
+      box-shadow: var(--panel-shadow, 0 4px 12px rgba(0, 0, 0, 0.1));
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 4px 0;
+      animation: dropFade 0.15s ease-out;
+    }
+
+    @keyframes dropFade {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .custom-dropdown-option {
+      padding: 0.55rem 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+
+    .custom-dropdown-option:hover {
+      background: rgba(13, 148, 136, 0.08);
+      color: var(--primary);
+    }
+
+    .custom-dropdown-option.selected {
+      background: rgba(13, 148, 136, 0.12);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Top Left Profile Dropdown Menu Styling */
+    .profile-trigger-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid var(--border-glow);
+      border-radius: 8px;
+      background: var(--slate-900, #f8fafc);
+      color: var(--text-main);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .profile-trigger-btn:hover {
+      background: var(--slate-800, #f1f5f9);
+      border-color: var(--primary);
+    }
+
+    .profile-avatar {
+      font-size: 0.9rem;
+    }
+
+    .profile-arrow {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      transition: transform 0.15s ease;
+    }
+
+    .custom-dropdown.open .profile-arrow {
+      transform: rotate(180deg);
+    }
+
+    .profile-options-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      left: auto;
+      width: 230px;
+      z-index: 1010;
+      background: var(--surface-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 8px;
+      box-shadow: var(--panel-shadow, 0 4px 12px rgba(0, 0, 0, 0.1));
+      padding: 4px 0;
+      animation: dropFade 0.15s ease-out;
+    }
+
+    .profile-opt-item {
+      padding: 0.55rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.12s ease;
+    }
+
+    .profile-opt-item:hover {
+      background: rgba(13, 148, 136, 0.08);
+      color: var(--primary);
+    }
+
+    .profile-opt-item.text-danger {
+      color: #e11d48;
+    }
+
+    .profile-opt-item.text-danger:hover {
+      background: rgba(225, 29, 72, 0.08);
+      color: #e11d48;
+    }
+
+    #profile-lang-select {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 1.4rem 0.25rem 0.4rem;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s ease;
+      width: auto;
+      appearance: none;
+      background-repeat: no-repeat;
+      background-position: right 0.35rem center;
+      background-size: 0.8em;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    }
+
+    .dark #profile-lang-select {
+      background-color: rgba(30, 41, 59, 0.7);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    }
+
+    .theme-select-btn {
+      flex: 1;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid var(--border-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      cursor: pointer;
+      background: var(--surface-card);
+      color: var(--text-muted);
+      transition: all 0.12s ease;
+      outline: none;
+    }
+
+    .theme-select-btn:hover {
+      border-color: var(--primary);
+      color: var(--text-main);
+    }
+
+    .theme-select-btn.active {
+      background: var(--primary) !important;
+      color: white !important;
+      border-color: var(--primary) !important;
+    }
+
+    /* Premium Icon-Only Theme Toggle Button */
+    .theme-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border-glow);
+      background: var(--surface-card);
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 0.95rem;
+      padding: 0;
+      transition: all 0.15s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      background: var(--slate-900, #f8fafc);
+      border-color: var(--primary);
     }
 
     .nav-tab {
-      padding: 0.75rem 1rem;
-      border-radius: 10px;
+      position: relative;
+      padding: 0.55rem 0.85rem 0.55rem 1.1rem;
+      border-radius: 8px;
       background: transparent;
       border: none;
       color: var(--text-muted);
       cursor: pointer;
       text-align: left;
-      font-size: 0.9rem;
-      font-weight: 600;
-      transition: all 0.2s ease;
+      font-size: 0.86rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
       display: flex;
       align-items: center;
       gap: 0.75rem;
     }
 
+    .nav-tab span:first-child {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--slate-900, #f8fafc);
+      font-size: 0.9rem;
+      transition: all 0.15s ease;
+      border: 1px solid var(--border-glow);
+    }
+
     .nav-tab:hover {
-      background: rgba(20, 184, 166, 0.1);
-      color: var(--primary-light);
+      background: var(--slate-900, #f8fafc);
+      color: var(--text-main);
+    }
+
+    .nav-tab:hover span:first-child {
+      background: var(--slate-800, #e2e8f0);
+      transform: scale(1.05);
     }
 
     .nav-tab.active {
-      background: linear-gradient(135deg, rgba(13, 148, 136, 0.25), rgba(6, 182, 212, 0.15));
-      border: 1px solid rgba(20, 184, 166, 0.35);
-      color: var(--primary-light);
-      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15);
+      background: rgba(13, 148, 136, 0.06);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .nav-tab.active span:first-child {
+      background: rgba(13, 148, 136, 0.12);
+      border-color: rgba(13, 148, 136, 0.2);
+    }
+
+    .nav-tab.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20%;
+      bottom: 20%;
+      width: 3.5px;
+      background: var(--primary);
+      border-radius: 0 4px 4px 0;
     }
 
     .nav-tab-badge {
       margin-left: auto;
-      font-size: 0.75rem;
-      padding: 0.15rem 0.45rem;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.08);
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 5px;
+      background: var(--slate-800, #f1f5f9);
+      color: var(--text-muted);
+      border: 1px solid var(--border-glow);
+      font-weight: 600;
     }
 
     .main-content {
-      padding: 2rem 2.5rem;
+      padding: 1.75rem 2.25rem;
       overflow-y: auto;
-      max-height: calc(100vh - 65px);
+      max-height: calc(100vh - 58px);
     }
 
     .tab-content {
@@ -324,36 +572,32 @@
 
     .tab-content.active {
       display: block;
-      animation: fadeIn 0.25s ease-out;
+      animation: fadeIn 0.2s ease-out;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     /* Cards & Grids */
     .card-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1.25rem;
-      margin-top: 1.25rem;
+      gap: 1rem;
+      margin-top: 1rem;
     }
 
     .glass-card {
       background: var(--surface-card);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--border-glow);
-      border-radius: 16px;
-      padding: 1.5rem;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: border-color 0.15s ease;
     }
 
     .glass-card:hover {
-      border-color: rgba(20, 184, 166, 0.3);
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+      border-color: var(--primary);
     }
 
     /* Chat Container */
@@ -514,7 +758,7 @@
         padding: 0.5rem;
         border-right: none;
         border-top: 1px solid var(--border-glow);
-        background: rgba(15, 23, 42, 0.95);
+        background: var(--surface-dark);
         gap: 0.25rem;
         justify-content: space-around;
       }
@@ -543,31 +787,50 @@
 
   <!-- Top Navigation Bar -->
   <header class="navbar">
-    <a href="/" class="brand">
-      <span class="brand-icon">🛡️</span>
-      <span>Aadhaar Health Bridge</span>
-      <span class="brand-badge">PWA R4</span>
-    </a>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <a href="/" class="brand">
+        <span class="brand-icon">🛡️</span>
+        <span class="no-print">THEODORE</span>
+      </a>
+    </div>
 
     <div class="nav-actions">
-      <!-- Live Network Status -->
-      <div id="network-status" class="network-status-indicator online">
-        <span class="status-dot">●</span>
-        <span id="network-text">Online</span>
-      </div>
-
       <!-- PWA Install Button -->
       <button id="pwa-install-btn" class="btn btn-primary btn-sm" style="display: none;">
         📲 <span>Install App</span>
       </button>
 
+      <!-- Profile Section Dropdown (Hidden before login) -->
+      <div id="header-profile-menu" class="custom-dropdown" style="display: none; margin-left: 0.5rem; width: auto; position: relative;">
+        <button type="button" id="profile-dropdown-trigger" class="profile-trigger-btn">
+          <span class="profile-avatar">👤</span>
+          <span id="profile-display-name">Patient Name</span>
+          <span class="profile-arrow">▼</span>
+        </button>
+        <div id="profile-dropdown-options" class="profile-options-list" style="display: none;">
+          <div class="profile-opt-item" onclick="window.healthBridgeApp.openEditProfileModal()">✏️ Edit Profile & Contacts</div>
+          <div class="profile-opt-item" onclick="openAddMemberModal()">➕ Add Family Member</div>
+          <div class="profile-opt-item" onclick="window.healthBridgeApp.printEmergencyCard()">🖨️ Print Emergency Card</div>
+          <hr style="border: 0; border-top: 1px solid var(--border-glow); margin: 4px 0;">
+          <div class="profile-opt-item-static" onclick="event.stopPropagation();" style="padding: 0.55rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.82rem; font-weight: 500; color: var(--text-main);">
+            <span style="display: flex; align-items: center; gap: 0.5rem;">🌐 <span data-i18n="profile.language">Language</span></span>
+            <select id="profile-lang-select" class="form-control" style="width: 105px; max-width: 105px;"></select>
+          </div>
+          <div class="profile-opt-item-static" onclick="event.stopPropagation();" style="padding: 0.4rem 0.75rem 0.6rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+            <div style="display: flex; width: 100%; gap: 0.5rem;">
+              <button type="button" id="theme-btn-light" onclick="window.setTheme('light'); event.stopPropagation();" class="theme-select-btn">☀️ Light</button>
+              <button type="button" id="theme-btn-dark" onclick="window.setTheme('dark'); event.stopPropagation();" class="theme-select-btn">🌙 Dark</button>
+            </div>
+          </div>
+          <hr style="border: 0; border-top: 1px solid var(--border-glow); margin: 4px 0;">
+          <div class="profile-opt-item text-danger" onclick="document.getElementById('logout-btn').click()">🚪 Logout</div>
+        </div>
+      </div>
+
       <!-- Authenticated User Menu & Logout -->
       <div id="user-controls" style="display: none; align-items: center; gap: 0.5rem;">
-        <button id="nav-sos-btn" class="btn btn-sm btn-danger" onclick="window.healthBridgeApp.triggerEmergencySOS()" style="box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); font-weight: 800;">
-          🚨 <span>SOS Alert</span>
-        </button>
-        <span id="user-display-name" style="font-size: 0.85rem; font-weight: 700; color: var(--primary-light);"></span>
-        <button id="logout-btn" class="btn btn-sm btn-danger">
+        <span id="user-display-name" style="font-size: 0.85rem; font-weight: 700; color: var(--primary-light); display: none;"></span>
+        <button id="logout-btn" class="btn btn-sm btn-danger" style="display: none;">
           🚪 <span data-i18n="nav.logout">Logout</span>
         </button>
       </div>
@@ -638,27 +901,25 @@
           <label data-i18n="vault.active_vault" style="font-size: 0.72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Active Vault</label>
           <button id="add-member-modal-btn" class="btn btn-sm" style="padding: 0.15rem 0.45rem; font-size: 0.7rem;" data-i18n="vault.add_member_btn">+ Member</button>
         </div>
-        <select id="vault-select" class="form-control" style="font-size: 0.85rem; padding: 0.5rem;"></select>
+        <select id="vault-select" style="display: none;"></select>
+        <div id="vault-dropdown-container" class="custom-dropdown">
+          <button type="button" id="vault-dropdown-trigger" class="form-control custom-dropdown-trigger">
+            <span id="vault-dropdown-selected-text">Loading...</span>
+            <span class="custom-dropdown-arrow">▼</span>
+          </button>
+          <div id="vault-dropdown-options" class="custom-dropdown-options-list" style="display: none;"></div>
+        </div>
       </div>
 
-      <button class="nav-tab active" data-tab="overview">
-        <span>📊</span>
-        <span data-i18n="nav.overview">Overview & Vitals</span>
-      </button>
       <button class="nav-tab" data-tab="biomarkers">
         <span>🧪</span>
         <span data-i18n="nav.biomarkers">Lab Biomarkers</span>
         <span id="biomarker-count-badge" class="nav-tab-badge">0</span>
       </button>
-      <button class="nav-tab" data-tab="documents">
+      <button class="nav-tab active" data-tab="documents">
         <span>📄</span>
-        <span data-i18n="nav.documents">Medical Records</span>
+        <span data-i18n="nav.documents">Medical Records & Files</span>
         <span id="doc-count-badge" class="nav-tab-badge">0</span>
-      </button>
-      <button class="nav-tab" data-tab="files">
-        <span>📁</span>
-        <span data-i18n="nav.files">Medical Files & Reports</span>
-        <span id="file-count-badge" class="nav-tab-badge">0</span>
       </button>
       <button class="nav-tab" data-tab="chat">
         <span>🤖</span>
@@ -677,89 +938,6 @@
 
     <!-- Main Content Area -->
     <section class="main-content">
-      <!-- Tab 1: Overview & Vitals -->
-      <div id="tab-overview" class="tab-content active">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
-          <div>
-            <h2 data-i18n="overview.title" style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">Patient Clinical Profile</h2>
-            <p data-i18n="overview.subtitle" class="text-muted" style="font-size: 0.9rem;">HL7 FHIR R4 Compliant Personal Health Record</p>
-          </div>
-          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <button id="btn-broadcast-sos" class="btn btn-danger btn-sm" onclick="window.healthBridgeApp.triggerEmergencySOS()" style="box-shadow: 0 0 14px rgba(239, 68, 68, 0.45); font-weight: 800;">
-              🚨 <span>Broadcast Emergency SOS</span>
-            </button>
-            <button id="edit-profile-modal-btn" class="btn btn-sm" onclick="window.healthBridgeApp.openEditProfileModal()">
-              ✏️ <span data-i18n="overview.edit_profile">Edit Profile & Contacts</span>
-            </button>
-            <button id="export-fhir-btn" class="btn btn-primary btn-sm">
-              📥 <span data-i18n="vault.export_fhir">Export FHIR R4 Bundle</span>
-            </button>
-            <button id="quick-emergency-btn" class="btn btn-secondary btn-sm" onclick="window.healthBridgeApp.switchTab('emergency')">
-              🏷️ <span data-i18n="overview.emergency_pass">Emergency Pass</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="card-grid">
-          <div class="glass-card">
-            <small data-i18n="vault.full_name" class="text-muted" style="text-transform: uppercase; font-weight: 700;">Full Name</small>
-            <h3 id="patient-name" style="margin-top: 0.35rem; font-size: 1.25rem;">Loading...</h3>
-            <span id="patient-relation-pill" class="badge" style="margin-top: 0.5rem; display: inline-block;">Self</span>
-          </div>
-          <div class="glass-card">
-            <small data-i18n="vault.blood_group" class="text-muted" style="text-transform: uppercase; font-weight: 700;">Blood Group</small>
-            <h3 id="patient-blood-group" style="margin-top: 0.35rem; font-size: 1.5rem; color: #fb7185; font-weight: 800;">O+</h3>
-            <small data-i18n="overview.abo_verified" class="text-muted">ABO/Rh Verified</small>
-          </div>
-          <div class="glass-card">
-            <small data-i18n="overview.primary_emergency" class="text-muted" style="text-transform: uppercase; font-weight: 700;">Primary Emergency Contact</small>
-            <h3 id="patient-emergency-contact" style="margin-top: 0.35rem; font-size: 1.15rem; font-family: monospace;">Not Configured</h3>
-            <a id="patient-emergency-call" href="#" class="btn btn-sm" style="margin-top: 0.5rem; display: none;">📞 <span data-i18n="overview.call_primary">Call Primary</span></a>
-          </div>
-          <div class="glass-card">
-            <small data-i18n="overview.emergency_readiness" class="text-muted" style="text-transform: uppercase; font-weight: 700;">Emergency Readiness</small>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
-              <span id="emergency-ready-status" style="font-weight: 700; color: #34d399;">Active</span>
-              <label class="switch" style="position: relative; display: inline-block; width: 44px; height: 24px;">
-                <input type="checkbox" id="emergency-toggle" checked style="opacity: 0; width: 0; height: 0;">
-                <span class="slider round" style="position: absolute; cursor: pointer; inset: 0; background-color: #0f766e; border-radius: 24px; transition: .3s;"></span>
-              </label>
-            </div>
-            <small data-i18n="overview.scans_allowed" class="text-muted">Paramedic QR Scans Allowed</small>
-          </div>
-        </div>
-
-        <!-- Caregiver Emergency Contacts Grid (At least 2 contacts) -->
-        <div style="margin-top: 1.5rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-            <h3 style="font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
-              <span>👨‍👩‍👧</span> <span data-i18n="overview.caregiver_contacts_title">Emergency Caregiver Contacts (At least 2 for Rescue)</span>
-            </h3>
-            <button class="btn btn-sm" onclick="window.healthBridgeApp.openEditProfileModal()" style="font-size: 0.75rem;">
-              ⚙️ <span data-i18n="overview.manage_contacts">Manage Contacts</span>
-            </button>
-          </div>
-          <div id="overview-contacts-container" class="card-grid">
-            <!-- Dynamically populated contacts -->
-          </div>
-        </div>
-
-        <!-- Clinical Alerts Banner -->
-        <div style="margin-top: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
-          <div class="glass-card" style="border-left: 4px solid #fb7185;">
-            <h4 style="font-size: 0.95rem; color: #fb7185; margin-bottom: 0.4rem;">🚨 <span data-i18n="overview.allergies">Severe Allergies</span></h4>
-            <p id="patient-allergies-text" style="font-size: 0.9rem; color: var(--text-main);">None reported</p>
-          </div>
-          <div class="glass-card" style="border-left: 4px solid #38bdf8;">
-            <h4 style="font-size: 0.95rem; color: #38bdf8; margin-bottom: 0.4rem;">🏥 <span data-i18n="overview.conditions">Chronic Conditions</span></h4>
-            <p id="patient-conditions-text" style="font-size: 0.9rem; color: var(--text-main);">None reported</p>
-          </div>
-          <div class="glass-card" style="border-left: 4px solid #a78bfa;">
-            <h4 style="font-size: 0.95rem; color: #a78bfa; margin-bottom: 0.4rem;">💊 <span data-i18n="overview.medications">Active Medications</span></h4>
-            <p id="patient-medications-text" style="font-size: 0.9rem; color: var(--text-main);">None reported</p>
-          </div>
-        </div>
-      </div>
 
       <!-- Tab 2: Biomarkers -->
       <div id="tab-biomarkers" class="tab-content">
@@ -771,14 +949,15 @@
           <input type="text" id="biomarker-search" data-i18n-placeholder="biomarkers.search_placeholder" class="form-control" placeholder="🔍 Search biomarkers (e.g. Glucose)..." style="max-width: 280px;">
         </div>
         <div id="metrics-list" class="card-grid"></div>
+        <div id="biomarkers-summary-container"></div>
       </div>
 
-      <!-- Tab 3: Documents -->
+      <!-- Tab 3: Documents (Consolidated Medical Records & Files Ingestion) -->
       <div id="tab-documents" class="tab-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
           <div>
-            <h2 data-i18n="documents.title" style="font-size: 1.6rem; font-weight: 800;">Medical Record Ingestion</h2>
-            <p data-i18n="documents.subtitle" class="text-muted" style="font-size: 0.9rem;">Secure Zero-Egress Local PDF Parsing & Vector Indexing</p>
+            <h2 data-i18n="documents.title" style="font-size: 1.6rem; font-weight: 800;">Medical Records & Files</h2>
+            <p data-i18n="documents.subtitle" class="text-muted" style="font-size: 0.9rem;">Secure Zero-Egress Local PDF Ingestion, Parsing & Offline Storage</p>
           </div>
         </div>
 
@@ -810,46 +989,37 @@
           <div id="upload-status" style="margin-top: 0.75rem; font-size: 0.85rem;"></div>
         </div>
 
-        <h3 data-i18n="documents.uploaded_records" style="font-size: 1.15rem; margin-bottom: 1rem;">Uploaded Medical Records</h3>
-        <div id="documents-list" class="card-grid"></div>
-      </div>
-
-      <!-- Tab: Files & PDF Vault (Open & WhatsApp Share) -->
-      <div id="tab-files" class="tab-content">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
-          <div>
-            <h2 data-i18n="files.title" style="font-size: 1.6rem; font-weight: 800;">Patient Medical Files & PDF Vault</h2>
-            <p data-i18n="files.subtitle" class="text-muted" style="font-size: 0.9rem;">View, preview, and share laboratory reports and prescriptions instantly</p>
-          </div>
-          <div style="display: flex; gap: 0.75rem; align-items: center;">
-            <input type="text" id="files-search" data-i18n-placeholder="files.search_placeholder" class="form-control" placeholder="🔍 Search files by name or category..." style="max-width: 260px;" oninput="window.healthBridgeApp.filterFiles(this.value)">
-            <button class="btn btn-primary btn-sm" onclick="window.healthBridgeApp.switchTab('documents')">
-              + <span data-i18n="documents.upload_btn">Upload New PDF</span>
-            </button>
-          </div>
-        </div>
-
         <!-- Hybrid Storage & Offline Device Cache Controls -->
         <div class="glass-card" style="margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border-left: 4px solid #10b981;">
           <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <span style="font-size: 1.4rem;">⚡</span>
+            <span style="font-size: 1.4rem;">🛡️</span>
             <div>
-              <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Hybrid Storage Mode Active</div>
-              <div class="text-muted" style="font-size: 0.76rem;">PDFs cached on-device for 100% offline access & backed up in encrypted vault</div>
+              <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">Saved Offline & Secure</div>
+              <div class="text-muted" style="font-size: 0.76rem;">Your files are saved on this phone for offline access and backed up in your secure locker.</div>
             </div>
           </div>
           <div style="display: flex; gap: 0.5rem; align-items: center;">
             <button class="btn btn-sm" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;" onclick="window.healthBridgeApp.exportAllLocalVaultFiles()">
-              💾 Save All to Phone
+              💾 Download All
             </button>
             <button class="btn btn-sm" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25);" onclick="window.healthBridgeApp.clearDeviceCache()">
-              🧹 Clear Device Cache
+              🧹 Clear Local Storage
             </button>
           </div>
         </div>
 
+        <!-- Header and Search Section -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; margin-bottom: 1.25rem;">
+          <div>
+            <h3 data-i18n="documents.uploaded_records" style="font-size: 1.25rem; font-weight: 800;">My Records & Reports</h3>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <input type="text" id="files-search" data-i18n-placeholder="files.search_placeholder" class="form-control" placeholder="🔍 Search files by name or category..." style="max-width: 260px;" oninput="window.healthBridgeApp.filterFiles(this.value)">
+          </div>
+        </div>
+
         <div id="files-grid" class="card-grid">
-          <!-- Dynamically populated files with Open and WhatsApp share buttons -->
+          <!-- Dynamically populated files with Open, download, delete, and WhatsApp share buttons -->
         </div>
       </div>
 
@@ -903,11 +1073,11 @@
       <div id="tab-emergency" class="tab-content">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
           <div>
-            <h2 data-i18n="emergency.title" style="font-size: 1.6rem; font-weight: 800;">Offline Paramedic Emergency Pass</h2>
-            <p data-i18n="emergency.subtitle" class="text-muted" style="font-size: 0.9rem;">Paramedic glass-breaker access for first responders with zero network connectivity</p>
+            <h2 data-i18n="emergency.title" style="font-size: 1.5rem; font-weight: 700;">Offline Paramedic Emergency Pass</h2>
+            <p data-i18n="emergency.subtitle" class="text-muted" style="font-size: 0.88rem;">Paramedic glass-breaker access for first responders with zero network connectivity</p>
           </div>
           <div style="display: flex; gap: 0.75rem;">
-            <button class="btn btn-primary" onclick="window.healthBridgeApp.openCameraScanner()" style="box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); font-weight: 800;">
+            <button class="btn btn-primary" onclick="window.healthBridgeApp.openCameraScanner()">
               📷 <span>Scan Patient Offline QR</span>
             </button>
           </div>
@@ -924,14 +1094,14 @@
               </button>
             </div>
 
-            <div id="emergency-qr-code" style="padding: 1.25rem; background: white; border-radius: 16px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);"></div>
+            <div id="emergency-qr-code" style="padding: 1.25rem; background: white; border-radius: 12px; border: 1px solid var(--border-glow);"></div>
             <div id="qr-crypto-seal-badge" style="margin-top: 0.75rem;">
-              <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 800; font-size: 0.75rem;">
-                🛡️ ECDSA-P256 Cryptographic Tamper Seal Active
+              <span class="badge" style="background: var(--indigo-950); color: var(--indigo-600); font-weight: 600; font-size: 0.75rem; border: 1px solid var(--indigo-800); padding: 0.2rem 0.5rem; border-radius: 6px; display: inline-block;">
+                🛡️ Cryptographic Tamper Seal Active
               </span>
             </div>
-            <h4 data-i18n="emergency.scan_title" style="margin-top: 0.85rem; font-size: 1.1rem; font-weight: 800;">Scan for Emergency Medical Brief</h4>
-            <p data-i18n="emergency.scan_subtitle" class="text-muted" style="font-size: 0.85rem; margin-top: 0.35rem;">Point any phone camera or scanner to decrypt vital triage card</p>
+            <h4 data-i18n="emergency.scan_title" style="margin-top: 0.85rem; font-size: 1.05rem; font-weight: 700;">Scan for Emergency Medical Brief</h4>
+            <p data-i18n="emergency.scan_subtitle" class="text-muted" style="font-size: 0.82rem; margin-top: 0.25rem;">Point any phone camera or scanner to decrypt vital triage card</p>
             
             <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem; width: 100%;">
               <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="window.healthBridgeApp.printEmergencyCard()">
@@ -944,7 +1114,7 @@
           </div>
 
           <div class="glass-card space-y-4">
-            <h3 style="font-size: 1.15rem; font-weight: 800; color: #fb7185; display: flex; align-items: center; gap: 0.5rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: #e11d48; display: flex; align-items: center; gap: 0.5rem;">
               <span>🚨</span> <span data-i18n="emergency.triage_included">Triage Information Included</span>
             </h3>
             <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; font-size: 0.9rem;">
@@ -972,6 +1142,14 @@
         <div class="form-group">
           <label>Full Name</label>
           <input type="text" id="member-name" class="form-control" placeholder="e.g. Priya Dey" required>
+        </div>
+        <div class="form-group">
+          <label>Login Username / Handle</label>
+          <input type="text" id="member-username" class="form-control" placeholder="e.g. priya_dey" required>
+        </div>
+        <div class="form-group">
+          <label>Login Password</label>
+          <input type="password" id="member-password" class="form-control" placeholder="At least 6 characters" required>
         </div>
         <div class="form-group">
           <label>Relation</label>
@@ -1238,6 +1416,9 @@
   <div id="ahb-toast-container"></div>
 
   <!-- Scripts -->
+  <script>
+    window.AHB_API_BASE_URL = window.location.protocol + '//' + window.location.hostname + ':5000';
+  </script>
   <script src="theme.js"></script>
   <script src="i18n.js"></script>
   <script src="qrcode.min.js"></script>
